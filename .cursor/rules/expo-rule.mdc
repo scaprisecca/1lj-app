@@ -1,0 +1,122 @@
+---
+description: Best practices for building apps with the Expo framework using React Native.
+globs: ["**/*.{ts,tsx,js,jsx}"]
+alwaysApply: true
+---
+
+# Expo and React Native Best Practices
+
+You are an expert in TypeScript, React Native, Expo, and Mobile UI development. When working on this project, please adhere to the following best practices. For the most current and detailed guidance, you can always ask me to reference the official Expo documentation using the Context 7 MCP.
+
+## Code Style and Structure
+
+-   **Concise & Technical Code**: Write clear, technical TypeScript code with accurate examples.
+-   **Functional Patterns**: Use functional and declarative programming patterns. Avoid classes.
+-   **Modularization**: Prefer iteration and modularization over code duplication.
+-   **Descriptive Naming**: Use descriptive variable names with auxiliary verbs (e.g., `isLoading`, `hasError`).
+-   **File Structure**: Organize files logically. A good starting point is:
+    ```
+    /src
+    ├── api/
+    ├── assets/
+    │   ├── fonts/
+    │   └── images/
+    ├── components/
+    │   ├── common/
+    │   └── features/
+    ├── constants/
+    ├── hooks/
+    ├── navigation/
+    ├── screens/
+    ├── state/
+    ├── styles/
+    └── utils/
+    ```
+-   **Official Documentation**: Always follow Expo's official documentation for project setup and configuration: [https://docs.expo.dev/](https://docs.expo.dev/)
+
+## Naming Conventions
+
+-   **Directories**: Use lowercase with dashes for directories (e.g., `components/auth-wizard`).
+-   **Components**: Use PascalCase for component files and favor named exports (e.g., `export const MyComponent = ...`).
+
+## TypeScript Usage
+
+-   **Universal TypeScript**: Use TypeScript for all new code.
+-   **Strict Mode**: Enable strict mode in `tsconfig.json` for better type safety.
+-   **Interfaces over Types**: Prefer interfaces for defining object shapes and component props.
+-   **Avoid Enums**: Use object literals or union types instead of enums for better JavaScript interoperability.
+-   **Typed Routes**: Enable typed routes in `app.json` for type-safe navigation.
+    ```json
+    {
+      "expo": {
+        "experiments": {
+          "typedRoutes": true
+        }
+      }
+    }
+    ```
+
+## UI and Styling
+
+-   **Expo Components**: Use Expo's built-in components for common UI patterns.
+-   **Responsive Design**: Implement responsive design using Flexbox and `useWindowDimensions`.
+-   **Styling**: Use a consistent styling approach. Creating a separate `*.styles.ts` file for each component is recommended for scalability.
+-   **Dark Mode**: Support dark mode using Expo's `useColorScheme` hook.
+-   **Accessibility (a11y)**: Ensure high accessibility standards using ARIA roles and native accessibility props.
+-   **Animations**: Leverage `react-native-reanimated` and `react-native-gesture-handler` for performant animations.
+
+## Performance Optimization
+
+-   **Minimize State**: Minimize the use of `useState` and `useEffect`; prefer context and reducers for complex state.
+-   **Optimized Startup**: Use `expo-splash-screen` to provide a seamless app startup experience.
+-   **Image Optimization**: Use `expo-image` for optimized image loading, including WebP support, lazy loading, and blurhash placeholders.
+-   **Code Splitting**: Implement code splitting and lazy loading for non-critical components with React's `Suspense` and dynamic imports.
+-   **Memoization**: Avoid unnecessary re-renders by memoizing components with `React.memo` and using `useMemo` and `useCallback` hooks appropriately.
+
+## Navigation
+
+-   **Expo Router**: Use `expo-router` for file-based routing, which simplifies navigation and deep linking.
+-   **Typed Links**: With typed routes enabled, use the `<Link>` component for type-safe navigation.
+    ```tsx
+    import { Link } from 'expo-router';
+
+    <Link href={{ pathname: '/user/[id]', params: { id: '123' } }}>
+      View User
+    </Link>
+    ```
+-   **Accessing Params**: Use the `useLocalSearchParams` hook to access route parameters in a type-safe way.
+    ```tsx
+    import { Text } from 'react-native';
+    import { useLocalSearchParams } from 'expo-router';
+
+    export default function Page() {
+      const { profile } = useLocalSearchParams<'app/(search)/[profile].tsx'>();
+      return <Text>Profile: {profile}</Text>;
+    }
+    ```
+
+## State Management
+
+-   **React Context**: Use React Context and `useReducer` for managing simple global state.
+-   **Data Fetching**: Leverage TanStack Query (React Query) for data fetching, caching, and synchronization.
+-   **Complex State**: For complex state management, consider using Zustand or Redux Toolkit.
+
+## Error Handling and Validation
+
+-   **Runtime Validation**: Use Zod for runtime validation and schema definition.
+-   **Error Logging**: Implement error logging using a service like Sentry.
+-   **Error Boundaries**: Use global error boundaries to catch and handle unexpected errors gracefully.
+-   **Early Returns**: Handle errors at the beginning of functions and use early returns to avoid nested `if` statements.
+
+## Security
+
+-   **Secure Storage**: Use `expo-secure-store` for storing sensitive data like tokens.
+-   **API Communication**: Ensure all API communication uses HTTPS.
+-   **Expo Security Guidelines**: Follow Expo's official security guidelines: [https://docs.expo.dev/guides/security/](https://docs.expo.dev/guides/security/)
+
+## Key Conventions
+
+1.  **Managed Workflow**: Rely on Expo's managed workflow for streamlined development.
+2.  **Environment Variables**: Use `expo-constants` for managing environment variables.
+3.  **OTA Updates**: Implement `expo-updates` for over-the-air (OTA) updates.
+4.  **Cross-Platform Testing**: Test extensively on both iOS and Android.
