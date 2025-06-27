@@ -3,19 +3,19 @@ import { sql } from 'drizzle-orm';
 
 export const journalEntries = sqliteTable('journal_entries', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  date: text('date').notNull().unique(), // YYYY-MM-DD format
-  content: text('content').notNull(),
-  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
-  updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+  entry_date: text('entry_date').notNull().unique(), // YYYY-MM-DD format (PRD spec)
+  html_body: text('html_body').notNull(), // HTML content from rich text editor (PRD spec)
+  created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
 export const backupLogs = sqliteTable('backup_logs', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  location: text('location').notNull(),
-  type: text('type').notNull(), // 'manual' | 'automatic'
-  timestamp: text('timestamp').default(sql`CURRENT_TIMESTAMP`).notNull(),
-  size: integer('size'), // in bytes
-  status: text('status').notNull().default('success'), // 'success' | 'failed'
+  file_uri: text('file_uri').notNull(), // PRD spec: file_uri instead of location
+  run_type: text('run_type').notNull(), // PRD spec: 'auto'|'manual' instead of 'manual'|'automatic'
+  run_time: text('run_time').default(sql`CURRENT_TIMESTAMP`).notNull(), // PRD spec: run_time instead of timestamp
+  size_bytes: integer('size_bytes'), // PRD spec: size_bytes instead of size
+  status: text('status').notNull().default('success'), // Keep existing: 'success' | 'failed'
 });
 
 export type JournalEntry = typeof journalEntries.$inferSelect;

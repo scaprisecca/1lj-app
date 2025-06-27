@@ -18,7 +18,7 @@ export function CalendarGrid({ year, month, entries, selectedDate, onDateSelect 
   const daysInMonth = new Date(year, month, 0).getDate();
   const firstDayOfWeek = new Date(year, month - 1, 1).getDay();
   
-  const entryDates = new Set(entries.map(entry => entry.date));
+  const entryDates = new Set(entries.map(entry => entry.entry_date));
   
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const today = new Date().toISOString().split('T')[0];

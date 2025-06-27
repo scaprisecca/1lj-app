@@ -1,18 +1,20 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Save, Heart, AlertTriangle } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { DatabaseService } from '@/services/database';
 import { BackupService } from '@/services/backup';
 import { isUsingMock } from '@/lib/database/client';
+import { RichTextEditor, type RichTextEditorRef } from '@/components/organisms/RichTextEditor';
 
 export default function TodayScreen() {
   const [entry, setEntry] = useState('');
   const [todayEntry, setTodayEntry] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const richTextRef = useRef<RichTextEditorRef>(null);
   
   const today = new Date().toISOString().split('T')[0];
 
@@ -25,7 +27,9 @@ export default function TodayScreen() {
       const existingEntry = await DatabaseService.getEntryByDate(today);
       if (existingEntry) {
         setTodayEntry(existingEntry);
-        setEntry(existingEntry.content);
+        setEntry(existingEntry.html_body);
+        // Set the rich text editor content
+        richTextRef.current?.setContentHTML(existingEntry.html_body);
       }
     } catch (error) {
       console.error('Error loading today entry:', error);
@@ -63,6 +67,15 @@ export default function TodayScreen() {
     }
   };
 
+  const handleRichTextChange = (html: string) => {
+    setEntry(html);
+  };
+
+  const handleRichTextBlur = () => {
+    // Auto-save functionality can be added here in the future
+    console.log('Rich text editor blurred');
+  };
+
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-US', {
       weekday: 'long',
@@ -98,19 +111,18 @@ export default function TodayScreen() {
 
         <View style={styles.header}>
           <Text style={styles.dateText}>{formatDate(today)}</Text>
-          <Text style={styles.subtitle}>How was your day? Write as much as you'd like!</Text>
+          <Text style={styles.subtitle}>How was your day? Write with rich formatting!</Text>
         </View>
 
         <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.textInput}
+          <RichTextEditor
+            ref={richTextRef}
             value={entry}
-            onChangeText={setEntry}
-            placeholder="Write about your day... You can add as many details as you'd like throughout the day."
-            placeholderTextColor="#94A3B8"
-            multiline
-            textAlignVertical="top"
-            scrollEnabled={true}
+            onChange={handleRichTextChange}
+            onBlur={handleRichTextBlur}
+            placeholder="Write about your day... Use the toolbar below to format your text with bold, italic, headings, and lists."
+            style={styles.richTextEditor}
+            showCharacterCount={true}
           />
         </View>
 
@@ -190,13 +202,8 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  textInput: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 16,
-    color: '#1E293B',
-    lineHeight: 24,
+  richTextEditor: {
     flex: 1,
-    textAlignVertical: 'top',
   },
   bottomContainer: {
     paddingHorizontal: 24,

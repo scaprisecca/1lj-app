@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Calendar, Edit3 } from 'lucide-react-native';
+import { WebView } from 'react-native-webview';
 import type { JournalEntry } from '@/lib/database/schema';
 
 interface HistoryCardProps {
@@ -33,24 +34,63 @@ export function HistoryCard({ entry, onPress, showDate = true }: HistoryCardProp
     return `${Math.floor(diffDays / 365)} years ago`;
   };
 
+  // Create simplified HTML content for WebView rendering (Expo Go compatible)
+  const createHtmlContent = (htmlBody: string) => {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
+            color: #334155;
+            margin: 0;
+            padding: 0;
+            background: transparent;
+          }
+          p { margin: 0 0 8px 0; }
+          p:last-child { margin-bottom: 0; }
+          h1, h2, h3 { margin: 0 0 8px 0; color: #1E293B; }
+          ul, ol { margin: 0 0 8px 16px; padding: 0; }
+          strong { color: #1E293B; }
+        </style>
+      </head>
+      <body>${htmlBody}</body>
+      </html>
+    `;
+  };
+
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} disabled={!onPress}>
       <View style={styles.header}>
         <View style={styles.dateContainer}>
           <Calendar size={16} color="#6366F1" />
           {showDate && (
-            <Text style={styles.dateText}>{formatDate(entry.date)}</Text>
+            <Text style={styles.dateText}>{formatDate(entry.entry_date)}</Text>
           )}
-          <Text style={styles.relativeText}>({formatRelativeDate(entry.date)})</Text>
+          <Text style={styles.relativeText}>({formatRelativeDate(entry.entry_date)})</Text>
         </View>
         {onPress && <Edit3 size={16} color="#94A3B8" />}
       </View>
       
-      <Text style={styles.content}>{entry.content}</Text>
+      <View style={styles.contentContainer}>
+        <WebView
+          source={{ html: createHtmlContent(entry.html_body) }}
+          style={styles.webView}
+          scrollEnabled={false}
+          showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
+          originWhitelist={['*']}
+          javaScriptEnabled={false}
+        />
+      </View>
       
-      {entry.updatedAt !== entry.createdAt && (
+      {entry.updated_at !== entry.created_at && (
         <Text style={styles.updatedText}>
-          Last updated: {new Date(entry.updatedAt).toLocaleDateString()}
+          Last updated: {new Date(entry.updated_at).toLocaleDateString()}
         </Text>
       )}
     </TouchableOpacity>
@@ -93,11 +133,13 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     marginLeft: 4,
   },
-  content: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 16,
-    color: '#334155',
-    lineHeight: 24,
+  contentContainer: {
+    minHeight: 50,
+    marginBottom: 8,
+  },
+  webView: {
+    height: 80,
+    backgroundColor: 'transparent',
   },
   updatedText: {
     fontFamily: 'Inter-Regular',

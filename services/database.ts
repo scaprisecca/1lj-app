@@ -6,39 +6,39 @@ import { eq, desc, sql } from 'drizzle-orm';
 const mockEntries: JournalEntry[] = [
   {
     id: 1,
-    date: new Date().toISOString().split('T')[0],
-    content: 'Welcome to your journal! This is a sample entry showing how the app works.',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    entry_date: new Date().toISOString().split('T')[0],
+    html_body: '<p>Welcome to your journal! This is a sample entry showing how the app works.</p>',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   },
   {
     id: 2,
-    date: new Date(Date.now() - 86400000).toISOString().split('T')[0], // Yesterday
-    content: 'Yesterday was a good day. I learned something new about React Native development.',
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000).toISOString(),
+    entry_date: new Date(Date.now() - 86400000).toISOString().split('T')[0], // Yesterday
+    html_body: '<p>Yesterday was a good day. I learned something new about <strong>React Native</strong> development.</p>',
+    created_at: new Date(Date.now() - 86400000).toISOString(),
+    updated_at: new Date(Date.now() - 86400000).toISOString(),
   },
 ];
 
 let mockIdCounter = 3;
 
 export class DatabaseService {
-  static async createEntry(date: string, content: string): Promise<JournalEntry> {
+  static async createEntry(date: string, htmlContent: string): Promise<JournalEntry> {
     try {
       if (isUsingMock()) {
         // Mock implementation
         const newEntry: JournalEntry = {
           id: mockIdCounter++,
-          date,
-          content,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          entry_date: date,
+          html_body: htmlContent,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         };
         
         // Replace or add entry for this date
-        const existingIndex = mockEntries.findIndex(e => e.date === date);
+        const existingIndex = mockEntries.findIndex(e => e.entry_date === date);
         if (existingIndex >= 0) {
-          mockEntries[existingIndex] = { ...mockEntries[existingIndex], content, updatedAt: new Date().toISOString() };
+          mockEntries[existingIndex] = { ...mockEntries[existingIndex], html_body: htmlContent, updated_at: new Date().toISOString() };
           return mockEntries[existingIndex];
         } else {
           mockEntries.unshift(newEntry);
@@ -52,9 +52,9 @@ export class DatabaseService {
       }
       
       const result = await db.insert(journalEntries).values({
-        date,
-        content,
-        updatedAt: new Date().toISOString(),
+        entry_date: date,
+        html_body: htmlContent,
+        updated_at: new Date().toISOString(),
       }).returning();
       
       return result[0];
@@ -64,7 +64,7 @@ export class DatabaseService {
     }
   }
 
-  static async updateEntry(id: number, content: string): Promise<JournalEntry> {
+  static async updateEntry(id: number, htmlContent: string): Promise<JournalEntry> {
     try {
       if (isUsingMock()) {
         // Mock implementation
@@ -72,8 +72,8 @@ export class DatabaseService {
         if (entryIndex >= 0) {
           mockEntries[entryIndex] = {
             ...mockEntries[entryIndex],
-            content,
-            updatedAt: new Date().toISOString(),
+            html_body: htmlContent,
+            updated_at: new Date().toISOString(),
           };
           return mockEntries[entryIndex];
         }
@@ -87,7 +87,7 @@ export class DatabaseService {
       
       const result = await db
         .update(journalEntries)
-        .set({ content, updatedAt: new Date().toISOString() })
+        .set({ html_body: htmlContent, updated_at: new Date().toISOString() })
         .where(eq(journalEntries.id, id))
         .returning();
       
@@ -106,7 +106,7 @@ export class DatabaseService {
     try {
       if (isUsingMock()) {
         // Mock implementation
-        return mockEntries.find(e => e.date === date) || null;
+        return mockEntries.find(e => e.entry_date === date) || null;
       }
 
       const db = getDatabase();
@@ -117,7 +117,7 @@ export class DatabaseService {
       const result = await db
         .select()
         .from(journalEntries)
-        .where(eq(journalEntries.date, date))
+        .where(eq(journalEntries.entry_date, date))
         .limit(1);
       
       return result[0] || null;
@@ -131,7 +131,7 @@ export class DatabaseService {
     try {
       if (isUsingMock()) {
         // Mock implementation
-        return [...mockEntries].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        return [...mockEntries].sort((a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime());
       }
 
       const db = getDatabase();
@@ -142,7 +142,7 @@ export class DatabaseService {
       return await db
         .select()
         .from(journalEntries)
-        .orderBy(desc(journalEntries.date));
+        .orderBy(desc(journalEntries.entry_date));
     } catch (error) {
       console.error('Error getting all entries:', error);
       return [];
@@ -156,7 +156,7 @@ export class DatabaseService {
         const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
         const endDate = `${year}-${month.toString().padStart(2, '0')}-31`;
         
-        return mockEntries.filter(e => e.date >= startDate && e.date <= endDate);
+        return mockEntries.filter(e => e.entry_date >= startDate && e.entry_date <= endDate);
       }
 
       const db = getDatabase();
@@ -171,9 +171,9 @@ export class DatabaseService {
         .select()
         .from(journalEntries)
         .where(
-          sql`${journalEntries.date} >= ${startDate} AND ${journalEntries.date} <= ${endDate}`
+          sql`${journalEntries.entry_date} >= ${startDate} AND ${journalEntries.entry_date} <= ${endDate}`
         )
-        .orderBy(desc(journalEntries.date));
+        .orderBy(desc(journalEntries.entry_date));
     } catch (error) {
       console.error('Error getting entries for month:', error);
       return [];
@@ -184,7 +184,7 @@ export class DatabaseService {
     try {
       if (isUsingMock()) {
         // Mock implementation - return entries that match MM-DD format
-        return mockEntries.filter(e => e.date.substring(5) === monthDay);
+        return mockEntries.filter(e => e.entry_date.substring(5) === monthDay);
       }
 
       const db = getDatabase();
@@ -195,8 +195,8 @@ export class DatabaseService {
       return await db
         .select()
         .from(journalEntries)
-        .where(sql`substr(${journalEntries.date}, 6) = ${monthDay}`)
-        .orderBy(desc(journalEntries.date));
+        .where(sql`substr(${journalEntries.entry_date}, 6) = ${monthDay}`)
+        .orderBy(desc(journalEntries.entry_date));
     } catch (error) {
       console.error('Error getting history for date:', error);
       return [];

@@ -53,7 +53,7 @@ export class BackupService {
       const backupSettings = await this.getBackupSettings();
       
       // Get all journal entries
-      const entries = await db.select().from(journalEntries).orderBy(desc(journalEntries.date));
+      const entries = await db.select().from(journalEntries).orderBy(desc(journalEntries.entry_date));
       
       // Create backup data
       const backupData = {
@@ -74,7 +74,7 @@ export class BackupService {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const filename = `journal-backup-${timestamp}.json`;
       
-      let location = '';
+      let file_uri = '';
       
       if (Platform.OS === 'web') {
         // Web platform - trigger download
@@ -87,12 +87,12 @@ export class BackupService {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-        location = 'Downloads';
+        file_uri = 'Downloads';
       } else {
         // Mobile platforms - respect user's backup location preference
         const fileUri = `${FileSystem.documentDirectory}${filename}`;
         await FileSystem.writeAsStringAsync(fileUri, backupJson);
-        location = fileUri;
+        file_uri = fileUri;
         
         // Handle backup based on user preferences
         if (backupSettings.location === 'share' || (type === 'manual' && backupSettings.location !== 'documents')) {
@@ -105,7 +105,7 @@ export class BackupService {
           }
         } else if (backupSettings.location === 'documents') {
           // Save to app documents directory (default behavior)
-          location = fileUri;
+          file_uri = fileUri;
         } else if (backupSettings.location === 'custom' && backupSettings.customPath) {
           // For future implementation of custom paths
           // Currently falls back to documents + sharing
@@ -118,15 +118,15 @@ export class BackupService {
         }
       }
       
-      // Log the backup
+      // Log the backup using new schema
       await db.insert(backupLogs).values({
-        location,
-        type,
-        size: backupSize,
+        file_uri,
+        run_type: type === 'manual' ? 'manual' : 'auto',
+        size_bytes: backupSize,
         status: 'success',
       });
       
-      return location;
+      return file_uri;
     } catch (error) {
       console.error('Error creating backup:', error);
       
@@ -135,8 +135,8 @@ export class BackupService {
         try {
           const db = getDatabase();
           await db.insert(backupLogs).values({
-            location: 'failed',
-            type,
+            file_uri: 'failed',
+            run_type: type === 'manual' ? 'manual' : 'auto',
             status: 'failed',
           });
         } catch (logError) {
@@ -158,7 +158,7 @@ export class BackupService {
       const db = getDatabase();
       return await db.select()
         .from(backupLogs)
-        .orderBy(desc(backupLogs.timestamp))
+        .orderBy(desc(backupLogs.run_time))
         .limit(20);
     } catch (error) {
       console.error('Error getting backup history:', error);
@@ -195,25 +195,25 @@ export class BackupService {
       for (const entry of data.entries) {
         try {
           await db.insert(journalEntries).values({
-            date: entry.date,
-            content: entry.content,
-            createdAt: entry.createdAt || entry.created_at,
-            updatedAt: entry.updatedAt || entry.updated_at,
+            entry_date: entry.entry_date || entry.date, // Support both old and new field names
+            html_body: entry.html_body || entry.content, // Support both old and new field names
+            created_at: entry.created_at || entry.createdAt,
+            updated_at: entry.updated_at || entry.updatedAt,
           });
           restoredCount++;
         } catch (insertError) {
           // Skip entries that already exist
-          console.log('Skipping existing entry for date:', entry.date);
+          console.log('Skipping existing entry for date:', entry.entry_date || entry.date);
           skippedCount++;
         }
       }
       
       // Log the restore with details
       await db.insert(backupLogs).values({
-        location: `restored (${restoredCount} new, ${skippedCount} skipped)`,
-        type: 'manual',
+        file_uri: `restored (${restoredCount} new, ${skippedCount} skipped)`,
+        run_type: 'manual',
         status: 'success',
-        size: new Blob([backupData]).size,
+        size_bytes: new Blob([backupData]).size,
       });
       
       console.log(`Restore complete: ${restoredCount} entries restored, ${skippedCount} entries skipped`);
@@ -242,8 +242,8 @@ export class BackupService {
       // Only auto-backup if there are entries and it's been a while since last backup
       const lastBackup = await db.select()
         .from(backupLogs)
-        .where(sql`type = 'automatic' AND status = 'success'`)
-        .orderBy(desc(backupLogs.timestamp))
+        .where(sql`run_type = 'auto' AND status = 'success'`)
+        .orderBy(desc(backupLogs.run_time))
         .limit(1);
       
       const now = new Date();

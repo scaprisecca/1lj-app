@@ -101,6 +101,9 @@ importers:
       react-native-gesture-handler:
         specifier: ~2.24.0
         version: 2.24.0(react-native@0.79.1(@babel/core@7.27.7)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0)
+      react-native-pell-rich-editor:
+        specifier: ^1.9.0
+        version: 1.9.0(react-native-webview@13.13.5(react-native@0.79.1(@babel/core@7.27.7)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0))(react-native@0.79.1(@babel/core@7.27.7)(@types/react@19.0.14)(react@19.0.0))
       react-native-reanimated:
         specifier: ~3.17.4
         version: 3.17.5(@babel/core@7.27.7)(react-native@0.79.1(@babel/core@7.27.7)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0)
@@ -2963,6 +2966,12 @@ packages:
     peerDependencies:
       react: '*'
       react-native: '*'
+
+  react-native-pell-rich-editor@1.9.0:
+    resolution: {integrity: sha512-BKzlu++FySzPXrb5bczD8b/ZZJtfzcD4z7FvW7TrH+4OENEQtaIiEMfmb5N09Kv3YVJcfm8fut8Y+GLNAcCQHA==}
+    peerDependencies:
+      react-native: '>=0.50.0'
+      react-native-webview: '>=7.5.2'
 
   react-native-reanimated@3.17.5:
     resolution: {integrity: sha512-SxBK7wQfJ4UoWoJqQnmIC7ZjuNgVb9rcY5Xc67upXAFKftWg0rnkknTw6vgwnjRcvYThrjzUVti66XoZdDJGtw==}
@@ -6755,6 +6764,11 @@ snapshots:
     dependencies:
       react: 19.0.0
       react-native: 0.79.1(@babel/core@7.27.7)(@types/react@19.0.14)(react@19.0.0)
+
+  react-native-pell-rich-editor@1.9.0(react-native-webview@13.13.5(react-native@0.79.1(@babel/core@7.27.7)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0))(react-native@0.79.1(@babel/core@7.27.7)(@types/react@19.0.14)(react@19.0.0)):
+    dependencies:
+      react-native: 0.79.1(@babel/core@7.27.7)(@types/react@19.0.14)(react@19.0.0)
+      react-native-webview: 13.13.5(react-native@0.79.1(@babel/core@7.27.7)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0)
 
   react-native-reanimated@3.17.5(@babel/core@7.27.7)(react-native@0.79.1(@babel/core@7.27.7)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0):
     dependencies:
