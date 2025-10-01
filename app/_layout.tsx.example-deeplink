@@ -1,0 +1,60 @@
+// Example deep linking integration for widgets
+// Add this to your existing app/_layout.tsx file
+
+import { Linking } from 'react-native';
+import { useEffect } from 'react';
+
+// Inside your root layout component, add this:
+useEffect(() => {
+  // Handle initial URL (app opened from widget)
+  Linking.getInitialURL().then((url) => {
+    if (url) {
+      handleDeepLink(url);
+    }
+  });
+
+  // Handle URL when app is already open
+  const subscription = Linking.addEventListener('url', ({ url }) => {
+    handleDeepLink(url);
+  });
+
+  return () => {
+    subscription.remove();
+  };
+}, []);
+
+function handleDeepLink(url: string) {
+  console.log('Deep link received:', url);
+
+  if (url === 'onelinejournal://today') {
+    // Navigate to today screen
+    // router.push('/(tabs)/');
+  } else if (url === 'onelinejournal://quickadd') {
+    // Show quick add modal or navigate to today screen with focus
+    // You could show a modal here for quick text entry
+    Alert.prompt(
+      'Quick Add',
+      'Add a quick note to today\'s entry:',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Add',
+          onPress: async (text) => {
+            if (text && text.trim()) {
+              try {
+                await WidgetService.appendToToday(text.trim());
+                Alert.alert('Added!', 'Your note has been added to today\'s entry.');
+              } catch (error) {
+                Alert.alert('Error', 'Failed to add note. Please try again.');
+              }
+            }
+          }
+        }
+      ],
+      'plain-text'
+    );
+  }
+}

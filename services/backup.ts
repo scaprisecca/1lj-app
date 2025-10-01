@@ -4,6 +4,7 @@ import { desc, sql } from 'drizzle-orm';
 import * as FileSystem from 'expo-file-system';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CompressionService } from './compression';
 
 // Conditional import for expo-sharing to avoid web bundling issues
 let Sharing: any;
@@ -18,6 +19,7 @@ interface BackupSettings {
   location: BackupLocation;
   customPath?: string;
   autoBackup: boolean;
+  compress?: boolean; // Whether to compress backups
 }
 
 export class BackupService {
@@ -27,13 +29,15 @@ export class BackupService {
       const settings = await AsyncStorage.getItem('backupSettings');
       return settings ? JSON.parse(settings) : {
         location: 'documents',
-        autoBackup: true
+        autoBackup: true,
+        compress: true // Enable compression by default
       };
     } catch (error) {
       console.error('Error loading backup settings:', error);
       return {
         location: 'documents',
-        autoBackup: true
+        autoBackup: true,
+        compress: true
       };
     }
   }
@@ -72,17 +76,20 @@ export class BackupService {
       
       // Generate filename with timestamp
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const filename = `journal-backup-${timestamp}.json`;
-      
+      const baseFilename = `journal-backup-${timestamp}`;
+      const jsonFilename = `${baseFilename}.json`;
+      const compressedFilename = `${baseFilename}.zip`;
+
       let file_uri = '';
+      let finalSize = backupSize;
       
       if (Platform.OS === 'web') {
-        // Web platform - trigger download
+        // Web platform - trigger download (no compression on web)
         const blob = new Blob([backupJson], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = filename;
+        link.download = jsonFilename;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -90,16 +97,44 @@ export class BackupService {
         file_uri = 'Downloads';
       } else {
         // Mobile platforms - respect user's backup location preference
-        const fileUri = `${FileSystem.documentDirectory}${filename}`;
+        let fileUri = `${FileSystem.documentDirectory}${jsonFilename}`;
         await FileSystem.writeAsStringAsync(fileUri, backupJson);
+
+        // Compress the backup if enabled
+        if (backupSettings.compress) {
+          try {
+            console.log('[Backup] Compressing backup...');
+            const compressedUri = await CompressionService.compressFile(
+              fileUri,
+              `${FileSystem.documentDirectory}${compressedFilename}`
+            );
+
+            // Get compressed file size
+            const compressedInfo = await FileSystem.getInfoAsync(compressedUri);
+            finalSize = compressedInfo.size || backupSize;
+
+            // Delete the uncompressed file
+            await FileSystem.deleteAsync(fileUri, { idempotent: true });
+
+            // Use the compressed file
+            fileUri = compressedUri;
+            console.log(`[Backup] Backup compressed successfully: ${CompressionService.formatFileSize(finalSize)}`);
+          } catch (compressionError) {
+            console.error('[Backup] Compression failed, using uncompressed backup:', compressionError);
+            // Continue with uncompressed backup
+          }
+        }
+
         file_uri = fileUri;
-        
+
         // Handle backup based on user preferences
+        const mimeType = backupSettings.compress ? 'application/zip' : 'application/json';
+
         if (backupSettings.location === 'share' || (type === 'manual' && backupSettings.location !== 'documents')) {
           // Always share for manual backups or when user prefers sharing
           if (Sharing && await Sharing.isAvailableAsync()) {
             await Sharing.shareAsync(fileUri, {
-              mimeType: 'application/json',
+              mimeType,
               dialogTitle: 'Save Journal Backup'
             });
           }
@@ -111,18 +146,18 @@ export class BackupService {
           // Currently falls back to documents + sharing
           if (Sharing && await Sharing.isAvailableAsync()) {
             await Sharing.shareAsync(fileUri, {
-              mimeType: 'application/json',
+              mimeType,
               dialogTitle: 'Save Journal Backup to Custom Location'
             });
           }
         }
       }
       
-      // Log the backup using new schema
+      // Log the backup using new schema with actual final size
       await db.insert(backupLogs).values({
         file_uri,
         run_type: type === 'manual' ? 'manual' : 'auto',
-        size_bytes: backupSize,
+        size_bytes: finalSize,
         status: 'success',
       });
       
@@ -166,7 +201,7 @@ export class BackupService {
     }
   }
   
-  static async restoreFromBackup(backupData: string): Promise<void> {
+  static async restoreFromBackup(backupData: string, isCompressed: boolean = false, filePath?: string): Promise<void> {
     try {
       if (isUsingMock()) {
         // Mock implementation - just show console message
@@ -175,7 +210,29 @@ export class BackupService {
       }
 
       const db = getDatabase();
-      const data = JSON.parse(backupData);
+      let data;
+
+      // Handle compressed backups
+      if (isCompressed && filePath) {
+        console.log('[Backup] Decompressing backup file...');
+        const extractedDir = await CompressionService.decompressFile(filePath);
+
+        // Read the extracted JSON file (assuming it's named backup.json in the archive)
+        const jsonFiles = await FileSystem.readDirectoryAsync(extractedDir);
+        const jsonFile = jsonFiles.find(f => f.endsWith('.json'));
+
+        if (!jsonFile) {
+          throw new Error('No JSON file found in compressed backup');
+        }
+
+        const jsonContent = await FileSystem.readAsStringAsync(`${extractedDir}${jsonFile}`);
+        data = JSON.parse(jsonContent);
+
+        // Clean up extracted files
+        await FileSystem.deleteAsync(extractedDir, { idempotent: true });
+      } else {
+        data = JSON.parse(backupData);
+      }
       
       if (!data.entries || !Array.isArray(data.entries)) {
         throw new Error('Invalid backup format');

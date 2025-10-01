@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
-import { Edit3, Calendar, Clock } from 'lucide-react-native';
+import { Edit3, Calendar, Clock, Settings } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
@@ -48,6 +48,15 @@ export default function TabLayout() {
           title: 'History',
           tabBarIcon: ({ size, color }) => (
             <Clock size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ size, color }) => (
+            <Settings size={size} color={color} />
           ),
         }}
       />

@@ -10,10 +10,16 @@ import {
   Inter_700Bold
 } from '@expo-google-fonts/inter';
 import { SplashScreen } from 'expo-router';
-import { initializeDatabase } from '@/lib/database/client';
+import { initializeDatabase, runMigrations } from '@/lib/database/client';
+import { DataMigration } from '@/lib/database/migrations/data-migration';
+import { TaskManagerService } from '@/services/task-manager';
+import { SettingsService } from '@/services/settings';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
+
+// Define the background task before the component renders
+TaskManagerService.defineBackupTask();
 
 export default function RootLayout() {
   useFrameworkReady();
@@ -30,7 +36,13 @@ export default function RootLayout() {
   useEffect(() => {
     // Initialize database when app starts
     initializeDatabase()
-      .then(() => {
+      .then(async () => {
+        // Run schema migrations
+        await runMigrations();
+
+        // Run data migration (converts old field names to new PRD-compliant names)
+        await DataMigration.runAll();
+
         setDatabaseReady(true);
         console.log('Database initialized successfully');
       })
@@ -41,6 +53,27 @@ export default function RootLayout() {
         setDatabaseReady(true);
       });
   }, []);
+
+  useEffect(() => {
+    // Initialize background backup task when database is ready
+    if (databaseReady) {
+      SettingsService.getSetting('autoBackupFrequency')
+        .then((frequency) => {
+          if (frequency !== 'off') {
+            TaskManagerService.registerBackupTask(frequency)
+              .then(() => {
+                console.log('Background backup task registered successfully');
+              })
+              .catch((error) => {
+                console.error('Failed to register background backup task:', error);
+              });
+          }
+        })
+        .catch((error) => {
+          console.error('Failed to load auto-backup settings:', error);
+        });
+    }
+  }, [databaseReady]);
 
   useEffect(() => {
     if ((fontsLoaded || fontError) && databaseReady) {

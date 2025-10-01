@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="@drawable/widget_background"
+    android:gravity="top">
+
+    <!-- Date Header -->
+    <TextView
+        android:id="@+id/widget_date"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="January 15, 2025"
+        android:textSize="10sp"
+        android:textColor="#E6FFFFFF"
+        android:fontFamily="sans-serif-medium"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Entry Text -->
+    <TextView
+        android:id="@+id/widget_entry_text"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:text="No entry for today"
+        android:textSize="12sp"
+        android:textColor="#FFFFFF"
+        android:maxLines="3"
+        android:ellipsize="end"
+        android:fontFamily="sans-serif" />
+
+    <!-- Quick Add Button -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp">
+
+        <ImageView
+            android:id="@+id/widget_quick_add_button"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_gravity="end"
+            android:src="@drawable/ic_add_circle"
+            android:contentDescription="Quick add entry"
+            android:tint="#FFFFFF" />
+    </FrameLayout>
+
+</LinearLayout>

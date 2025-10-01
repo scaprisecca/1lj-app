@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, Fla
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ChevronLeft, ChevronRight, Plus, ChevronDown, X } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 import { CalendarGrid } from '@/components/molecules/CalendarGrid';
 import { HistoryCard } from '@/components/molecules/HistoryCard';
 import { LoadingSpinner } from '@/components/atoms/LoadingSpinner';
@@ -11,6 +12,7 @@ import { DatabaseService } from '@/services/database';
 import type { JournalEntry } from '@/lib/database/schema';
 
 export default function CalendarScreen() {
+  const router = useRouter();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>('');
@@ -64,26 +66,25 @@ export default function CalendarScreen() {
 
   const handleDateSelect = (date: string) => {
     setSelectedDate(date);
-    const entry = entries.find(e => e.date === date);
-    setSelectedEntry(entry || null);
+    const entry = entries.find(e => e.entry_date === date);
+
+    // Navigate to entry details if entry exists
+    if (entry) {
+      router.push(`/entry/${date}`);
+    } else {
+      setSelectedEntry(null);
+    }
   };
 
   const handleCreateEntry = () => {
     if (!selectedDate) return;
-    
-    Alert.alert(
-      'Create Entry',
-      `Create a journal entry for ${new Date(selectedDate).toLocaleDateString()}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Create', onPress: () => navigateToEntry(selectedDate) }
-      ]
-    );
+
+    // Navigate to today screen or entry creation (for now, just go to today screen)
+    router.push('/(tabs)/');
   };
 
   const navigateToEntry = (date: string) => {
-    // In a real implementation, you'd navigate to the entry creation/editing screen
-    console.log('Navigate to entry for date:', date);
+    router.push(`/entry/${date}`);
   };
 
   const formatMonthYear = (date: Date) => {
