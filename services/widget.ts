@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DatabaseService } from './database';
 import type { JournalEntry } from '@/lib/database/schema';
 import WidgetManager from '@/modules/widget-manager';
+import { logError, createWidgetError } from '@/utils/errorHandling';
 
 const WIDGET_DATA_KEY = '@widget_today_entry';
 const WIDGET_LAST_UPDATE_KEY = '@widget_last_update';
@@ -50,6 +51,10 @@ export class WidgetService {
       const today = new Date().toISOString().split('T')[0];
       const entry = await DatabaseService.getEntryByDate(today);
 
+      if (!entry && entry !== null) {
+        throw createWidgetError('Failed to retrieve entry from database');
+      }
+
       const widgetData: WidgetData = {
         date: today,
         htmlContent: entry?.html_body || '',
@@ -66,10 +71,12 @@ export class WidgetService {
       try {
         await WidgetManager.reloadWidgets();
       } catch (error) {
-        console.log('Widget reload not supported or failed:', error);
+        // Widget reload may not be supported on all platforms
+        logError(error, 'WidgetService.reloadWidgets');
       }
     } catch (error) {
-      console.error('Error updating widget data:', error);
+      logError(error, 'WidgetService.updateWidgetData');
+      throw createWidgetError('Failed to update widget data', error instanceof Error ? error : undefined);
     }
   }
 
@@ -80,9 +87,18 @@ export class WidgetService {
     try {
       const data = await AsyncStorage.getItem(WIDGET_DATA_KEY);
       if (!data) return null;
-      return JSON.parse(data);
+
+      const parsedData = JSON.parse(data);
+
+      // Validate parsed data structure
+      if (!parsedData.date || !parsedData.lastUpdate) {
+        logError('Invalid widget data structure', 'WidgetService.getWidgetData');
+        return null;
+      }
+
+      return parsedData;
     } catch (error) {
-      console.error('Error getting widget data:', error);
+      logError(error, 'WidgetService.getWidgetData');
       return null;
     }
   }
@@ -91,6 +107,10 @@ export class WidgetService {
    * Append text to today's entry (used by widget)
    */
   static async appendToToday(text: string): Promise<void> {
+    if (!text || text.trim().length === 0) {
+      throw createWidgetError('Cannot append empty text to entry');
+    }
+
     try {
       const today = new Date().toISOString().split('T')[0];
       const entry = await DatabaseService.getEntryByDate(today);
@@ -116,8 +136,8 @@ export class WidgetService {
       // Update widget data
       await this.updateWidgetData();
     } catch (error) {
-      console.error('Error appending to today:', error);
-      throw error;
+      logError(error, 'WidgetService.appendToToday');
+      throw createWidgetError('Failed to append text to today\'s entry', error instanceof Error ? error : undefined);
     }
   }
 
@@ -138,9 +158,17 @@ export class WidgetService {
    */
   static async getLastUpdate(): Promise<string | null> {
     try {
-      return await AsyncStorage.getItem(WIDGET_LAST_UPDATE_KEY);
+      const lastUpdate = await AsyncStorage.getItem(WIDGET_LAST_UPDATE_KEY);
+
+      // Validate timestamp format
+      if (lastUpdate && isNaN(Date.parse(lastUpdate))) {
+        logError('Invalid timestamp format in last update', 'WidgetService.getLastUpdate');
+        return null;
+      }
+
+      return lastUpdate;
     } catch (error) {
-      console.error('Error getting last update:', error);
+      logError(error, 'WidgetService.getLastUpdate');
       return null;
     }
   }

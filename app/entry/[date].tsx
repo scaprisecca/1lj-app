@@ -12,6 +12,7 @@ import { RichTextEditor, type RichTextEditorRef } from '@/components/organisms/R
 import { useAutoSave } from '@/hooks/useAutoSave';
 import RenderHtml from 'react-native-render-html';
 import { useWindowDimensions } from 'react-native';
+import { showErrorAlert, logError } from '@/utils/errorHandling';
 
 export default function EntryDetailScreen() {
   const { date } = useLocalSearchParams<{ date: string }>();
@@ -30,7 +31,10 @@ export default function EntryDetailScreen() {
   }, [date]);
 
   const loadEntry = async () => {
-    if (!date) return;
+    if (!date) {
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const existingEntry = await DatabaseService.getEntryByDate(date as string);
@@ -39,8 +43,8 @@ export default function EntryDetailScreen() {
         setEditedContent(existingEntry.html_body);
       }
     } catch (error) {
-      console.error('Error loading entry:', error);
-      Alert.alert('Error', 'Failed to load journal entry');
+      logError(error, 'EntryDetailScreen.loadEntry');
+      showErrorAlert(error, 'Load Error');
     } finally {
       setIsLoading(false);
     }
@@ -49,20 +53,29 @@ export default function EntryDetailScreen() {
   const saveEntry = async (content: string) => {
     if (!entry || !content.trim()) return;
 
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      if (Platform.OS !== 'web') {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+
+      await DatabaseService.updateEntry(entry.id, content.trim());
+
+      // Update local state
+      setEntry({ ...entry, html_body: content.trim() });
+
+      // Trigger backup (don't block on errors)
+      BackupService.createBackup().catch((err) => {
+        logError(err, 'EntryDetailScreen.saveEntry.backup');
+      });
+
+      // Update widget data (don't block on errors)
+      WidgetService.updateWidgetData().catch((err) => {
+        logError(err, 'EntryDetailScreen.saveEntry.widget');
+      });
+    } catch (error) {
+      logError(error, 'EntryDetailScreen.saveEntry');
+      throw error; // Re-throw to be caught by auto-save hook
     }
-
-    await DatabaseService.updateEntry(entry.id, content.trim());
-
-    // Update local state
-    setEntry({ ...entry, html_body: content.trim() });
-
-    // Trigger backup
-    await BackupService.createBackup();
-
-    // Update widget data
-    await WidgetService.updateWidgetData();
   };
 
   // Auto-save hook
@@ -74,8 +87,10 @@ export default function EntryDetailScreen() {
       console.log('Auto-saved successfully');
     },
     onSaveError: (error) => {
-      console.error('Auto-save error:', error);
-      Alert.alert('Save Error', 'Failed to auto-save your entry. Please try saving manually.');
+      logError(error, 'EntryDetailScreen.autoSave');
+      showErrorAlert(error, 'Auto-Save Error', {
+        dismissButtonText: 'OK',
+      });
     },
   });
 
@@ -96,8 +111,11 @@ export default function EntryDetailScreen() {
         setEnableAutoSave(false);
         Alert.alert('Saved!', 'Your changes have been saved.');
       } catch (error) {
-        console.error('Error saving entry:', error);
-        Alert.alert('Error', 'Failed to save your changes. Please try again.');
+        logError(error, 'EntryDetailScreen.handleSaveAndExit');
+        showErrorAlert(error, 'Save Error', {
+          retryAction: handleSaveAndExit,
+          retryButtonText: 'Try Again',
+        });
       }
     } else {
       setIsEditMode(false);
@@ -123,8 +141,11 @@ export default function EntryDetailScreen() {
       await saveNow();
       Alert.alert('Saved!', 'Your journal entry has been saved.');
     } catch (error) {
-      console.error('Error saving entry:', error);
-      Alert.alert('Error', 'Failed to save your entry. Please try again.');
+      logError(error, 'EntryDetailScreen.handleManualSave');
+      showErrorAlert(error, 'Save Error', {
+        retryAction: handleManualSave,
+        retryButtonText: 'Try Again',
+      });
     }
   };
 

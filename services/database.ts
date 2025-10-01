@@ -1,6 +1,7 @@
 import { getDatabase, isUsingMock } from '@/lib/database/client';
 import { journalEntries, type JournalEntry, type NewJournalEntry } from '@/lib/database/schema';
 import { eq, desc, sql } from 'drizzle-orm';
+import { logError, createDatabaseError } from '@/utils/errorHandling';
 
 // Mock data for when SQLite is not available
 const mockEntries: JournalEntry[] = [
@@ -24,6 +25,16 @@ let mockIdCounter = 3;
 
 export class DatabaseService {
   static async createEntry(date: string, htmlContent: string): Promise<JournalEntry> {
+    if (!date || !htmlContent) {
+      throw createDatabaseError('Date and content are required to create an entry');
+    }
+
+    // Validate date format (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) {
+      throw createDatabaseError(`Invalid date format: ${date}. Expected YYYY-MM-DD`);
+    }
+
     try {
       if (isUsingMock()) {
         // Mock implementation
@@ -34,7 +45,7 @@ export class DatabaseService {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
-        
+
         // Replace or add entry for this date
         const existingIndex = mockEntries.findIndex(e => e.entry_date === date);
         if (existingIndex >= 0) {
@@ -48,23 +59,35 @@ export class DatabaseService {
 
       const db = getDatabase();
       if (!db) {
-        throw new Error('Database not available');
+        throw createDatabaseError('Database not available');
       }
-      
+
       const result = await db.insert(journalEntries).values({
         entry_date: date,
         html_body: htmlContent,
         updated_at: new Date().toISOString(),
       }).returning();
-      
+
+      if (!result || result.length === 0) {
+        throw createDatabaseError('Failed to insert entry - no result returned');
+      }
+
       return result[0];
     } catch (error) {
-      console.error('Error creating entry:', error);
-      throw new Error('Failed to create journal entry');
+      logError(error, 'DatabaseService.createEntry');
+      throw createDatabaseError('Failed to create journal entry', error instanceof Error ? error : undefined);
     }
   }
 
   static async updateEntry(id: number, htmlContent: string): Promise<JournalEntry> {
+    if (!id || id <= 0) {
+      throw createDatabaseError('Valid entry ID is required');
+    }
+
+    if (!htmlContent) {
+      throw createDatabaseError('Content is required to update entry');
+    }
+
     try {
       if (isUsingMock()) {
         // Mock implementation
@@ -77,32 +100,37 @@ export class DatabaseService {
           };
           return mockEntries[entryIndex];
         }
-        throw new Error('Entry not found');
+        throw createDatabaseError(`Entry with ID ${id} not found`);
       }
 
       const db = getDatabase();
       if (!db) {
-        throw new Error('Database not available');
+        throw createDatabaseError('Database not available');
       }
-      
+
       const result = await db
         .update(journalEntries)
         .set({ html_body: htmlContent, updated_at: new Date().toISOString() })
         .where(eq(journalEntries.id, id))
         .returning();
-      
+
       if (result.length === 0) {
-        throw new Error('Entry not found');
+        throw createDatabaseError(`Entry with ID ${id} not found`);
       }
-      
+
       return result[0];
     } catch (error) {
-      console.error('Error updating entry:', error);
-      throw new Error('Failed to update journal entry');
+      logError(error, 'DatabaseService.updateEntry');
+      throw createDatabaseError('Failed to update journal entry', error instanceof Error ? error : undefined);
     }
   }
 
   static async getEntryByDate(date: string): Promise<JournalEntry | null> {
+    if (!date) {
+      logError('Date is required', 'DatabaseService.getEntryByDate');
+      return null;
+    }
+
     try {
       if (isUsingMock()) {
         // Mock implementation
@@ -111,18 +139,19 @@ export class DatabaseService {
 
       const db = getDatabase();
       if (!db) {
+        logError('Database not available', 'DatabaseService.getEntryByDate');
         return null;
       }
-      
+
       const result = await db
         .select()
         .from(journalEntries)
         .where(eq(journalEntries.entry_date, date))
         .limit(1);
-      
+
       return result[0] || null;
     } catch (error) {
-      console.error('Error getting entry by date:', error);
+      logError(error, 'DatabaseService.getEntryByDate');
       return null;
     }
   }
@@ -136,15 +165,18 @@ export class DatabaseService {
 
       const db = getDatabase();
       if (!db) {
+        logError('Database not available', 'DatabaseService.getAllEntries');
         return [];
       }
-      
-      return await db
+
+      const entries = await db
         .select()
         .from(journalEntries)
         .orderBy(desc(journalEntries.entry_date));
+
+      return entries || [];
     } catch (error) {
-      console.error('Error getting all entries:', error);
+      logError(error, 'DatabaseService.getAllEntries');
       return [];
     }
   }
@@ -204,6 +236,10 @@ export class DatabaseService {
   }
 
   static async deleteEntry(id: number): Promise<void> {
+    if (!id || id <= 0) {
+      throw createDatabaseError('Valid entry ID is required');
+    }
+
     try {
       if (isUsingMock()) {
         // Mock implementation
@@ -216,13 +252,13 @@ export class DatabaseService {
 
       const db = getDatabase();
       if (!db) {
-        throw new Error('Database not available');
+        throw createDatabaseError('Database not available');
       }
-      
+
       await db.delete(journalEntries).where(eq(journalEntries.id, id));
     } catch (error) {
-      console.error('Error deleting entry:', error);
-      throw new Error('Failed to delete journal entry');
+      logError(error, 'DatabaseService.deleteEntry');
+      throw createDatabaseError('Failed to delete journal entry', error instanceof Error ? error : undefined);
     }
   }
 

@@ -43,19 +43,46 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
     const [characterCount, setCharacterCount] = useState(0);
 
     useImperativeHandle(ref, () => ({
-      focus: () => richTextRef.current?.focusContentEditor(),
-      blur: () => richTextRef.current?.blurContentEditor(),
+      focus: () => {
+        try {
+          richTextRef.current?.focusContentEditor();
+        } catch (error) {
+          console.error('[RichTextEditor] Error focusing editor:', error);
+        }
+      },
+      blur: () => {
+        try {
+          richTextRef.current?.blurContentEditor();
+        } catch (error) {
+          console.error('[RichTextEditor] Error blurring editor:', error);
+        }
+      },
       getContentHtml: async () => {
-        return await richTextRef.current?.getContentHtml() || '';
+        try {
+          return await richTextRef.current?.getContentHtml() || '';
+        } catch (error) {
+          console.error('[RichTextEditor] Error getting HTML content:', error);
+          return '';
+        }
       },
       setContentHTML: (html: string) => {
-        richTextRef.current?.setContentHTML(html);
-        setCharacterCount(countHtmlCharacters(html));
+        try {
+          richTextRef.current?.setContentHTML(html);
+          setCharacterCount(countHtmlCharacters(html));
+        } catch (error) {
+          console.error('[RichTextEditor] Error setting HTML content:', error);
+          setCharacterCount(0);
+        }
       },
     }));
 
     useEffect(() => {
-      setCharacterCount(countHtmlCharacters(value));
+      try {
+        setCharacterCount(countHtmlCharacters(value));
+      } catch (error) {
+        console.error('[RichTextEditor] Error counting characters:', error);
+        setCharacterCount(0);
+      }
     }, [value]);
 
     const handleCursorPosition = (scrollY: number) => {
@@ -64,16 +91,22 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
     };
 
     const handleChange = (html: string) => {
-      const newCharCount = countHtmlCharacters(html);
-      setCharacterCount(newCharCount);
-      
-      // If there's a character limit, enforce it
-      if (characterLimit && newCharCount > characterLimit) {
-        // Don't call onChange if limit exceeded
-        return;
+      try {
+        const newCharCount = countHtmlCharacters(html);
+        setCharacterCount(newCharCount);
+
+        // If there's a character limit, enforce it
+        if (characterLimit && newCharCount > characterLimit) {
+          // Don't call onChange if limit exceeded
+          return;
+        }
+
+        onChange?.(html);
+      } catch (error) {
+        console.error('[RichTextEditor] Error handling content change:', error);
+        // Still update character count to prevent UI from breaking
+        setCharacterCount(0);
       }
-      
-      onChange?.(html);
     };
 
     const handleBlur = () => {
