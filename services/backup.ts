@@ -6,8 +6,14 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CompressionService } from './compression';
 
+// Type definition for expo-sharing module
+interface SharingModule {
+  isAvailableAsync: () => Promise<boolean>;
+  shareAsync: (url: string, options?: { mimeType?: string; dialogTitle?: string }) => Promise<void>;
+}
+
 // Conditional import for expo-sharing to avoid web bundling issues
-let Sharing: any;
+let Sharing: SharingModule | null = null;
 if (Platform.OS !== 'web') {
   Sharing = require('expo-sharing');
 }

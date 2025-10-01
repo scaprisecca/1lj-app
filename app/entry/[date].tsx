@@ -13,6 +13,7 @@ import { useAutoSave } from '@/hooks/useAutoSave';
 import RenderHtml from 'react-native-render-html';
 import { useWindowDimensions } from 'react-native';
 import { showErrorAlert, logError } from '@/utils/errorHandling';
+import type { JournalEntry } from '@/lib/database/schema';
 
 export default function EntryDetailScreen() {
   const { date } = useLocalSearchParams<{ date: string }>();
@@ -20,11 +21,11 @@ export default function EntryDetailScreen() {
   const { width } = useWindowDimensions();
   const richTextRef = useRef<RichTextEditorRef>(null);
 
-  const [entry, setEntry] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [editedContent, setEditedContent] = useState('');
-  const [enableAutoSave, setEnableAutoSave] = useState(false);
+  const [entry, setEntry] = useState<JournalEntry | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
+  const [editedContent, setEditedContent] = useState<string>('');
+  const [enableAutoSave, setEnableAutoSave] = useState<boolean>(false);
 
   useEffect(() => {
     loadEntry();

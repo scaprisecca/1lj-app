@@ -1,8 +1,8 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 
-interface UseAutoSaveOptions {
+interface UseAutoSaveOptions<T> {
   /** Function to call to save the data */
-  onSave: (data: any) => Promise<void>;
+  onSave: (data: T) => Promise<void>;
   /** Debounce delay in milliseconds (default: 2000ms) */
   delay?: number;
   /** Enable/disable auto-save (default: true) */
@@ -32,8 +32,7 @@ interface UseAutoSaveReturn {
  * Hook for automatic saving with debouncing
  *
  * @example
- * const { saveNow, isSaving, lastSaved } = useAutoSave({
- *   data: entryContent,
+ * const { saveNow, isSaving, lastSaved } = useAutoSave(entryContent, {
  *   onSave: async (content) => {
  *     await DatabaseService.saveEntry(content);
  *   },
@@ -42,7 +41,7 @@ interface UseAutoSaveReturn {
  */
 export function useAutoSave<T>(
   data: T,
-  options: UseAutoSaveOptions
+  options: UseAutoSaveOptions<T>
 ): UseAutoSaveReturn {
   const {
     onSave,

@@ -10,12 +10,13 @@ import { WidgetService } from '@/services/widget';
 import { isUsingMock } from '@/lib/database/client';
 import { RichTextEditor, type RichTextEditorRef } from '@/components/organisms/RichTextEditor';
 import { useAutoSave } from '@/hooks/useAutoSave';
+import type { JournalEntry } from '@/lib/database/schema';
 
 export default function TodayScreen() {
-  const [entry, setEntry] = useState('');
-  const [todayEntry, setTodayEntry] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [enableAutoSave, setEnableAutoSave] = useState(false);
+  const [entry, setEntry] = useState<string>('');
+  const [todayEntry, setTodayEntry] = useState<JournalEntry | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [enableAutoSave, setEnableAutoSave] = useState<boolean>(false);
   const richTextRef = useRef<RichTextEditorRef>(null);
 
   const today = new Date().toISOString().split('T')[0];
@@ -26,6 +27,7 @@ export default function TodayScreen() {
 
   const loadTodayEntry = async () => {
     try {
+      setIsLoading(true);
       const existingEntry = await DatabaseService.getEntryByDate(today);
       if (existingEntry) {
         setTodayEntry(existingEntry);
@@ -37,6 +39,7 @@ export default function TodayScreen() {
       setEnableAutoSave(true);
     } catch (error) {
       console.error('Error loading today entry:', error);
+      Alert.alert('Error', 'Failed to load your entry. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -129,7 +132,8 @@ export default function TodayScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading...</Text>
+          <ActivityIndicator size="large" color="#6366F1" />
+          <Text style={styles.loadingText}>Loading your entry...</Text>
         </View>
       </SafeAreaView>
     );

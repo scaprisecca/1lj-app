@@ -1,5 +1,5 @@
 import React, { useRef, useImperativeHandle, forwardRef, useState, useEffect } from 'react';
-import { View, StyleSheet, Platform, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Platform, Text, TouchableOpacity, ViewStyle } from 'react-native';
 import { RichEditor, RichToolbar, actions } from 'react-native-pell-rich-editor';
 import { countHtmlCharacters, isHtmlEmpty } from '@/utils/html';
 import { Save } from 'lucide-react-native';
@@ -11,7 +11,7 @@ interface RichTextEditorProps {
   onSave?: () => void;
   placeholder?: string;
   disabled?: boolean;
-  style?: any;
+  style?: ViewStyle;
   showCharacterCount?: boolean;
   characterLimit?: number;
   showSaveButton?: boolean;

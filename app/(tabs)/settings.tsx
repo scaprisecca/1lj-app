@@ -40,6 +40,7 @@ export default function SettingsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isUpdatingFrequency, setIsUpdatingFrequency] = useState(false);
   const [characterLimitInput, setCharacterLimitInput] = useState('280');
   const backgroundPermissions = useBackgroundTaskPermissions();
 
@@ -126,8 +127,10 @@ export default function SettingsScreen() {
 
   const handleAutoBackupFrequencyChange = async (frequency: AutoBackupFrequency) => {
     try {
+      setIsUpdatingFrequency(true);
+
       if (Platform.OS !== 'web') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
 
       // Check background task permissions before enabling
@@ -143,6 +146,10 @@ export default function SettingsScreen() {
       await TaskManagerService.updateBackupFrequency(frequency);
       setSettings({ ...settings, autoBackupFrequency: frequency });
 
+      if (Platform.OS !== 'web') {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+
       if (frequency !== 'off') {
         Alert.alert(
           'Auto Backup Enabled',
@@ -157,6 +164,8 @@ export default function SettingsScreen() {
     } catch (error) {
       console.error('Error updating auto backup frequency:', error);
       Alert.alert('Error', 'Failed to update auto backup settings');
+    } finally {
+      setIsUpdatingFrequency(false);
     }
   };
 
@@ -320,21 +329,29 @@ export default function SettingsScreen() {
                   style={[
                     styles.frequencyOption,
                     settings.autoBackupFrequency === frequency && styles.frequencyOptionActive,
+                    isUpdatingFrequency && styles.frequencyOptionDisabled,
                   ]}
                   onPress={() => handleAutoBackupFrequencyChange(frequency)}
                   activeOpacity={0.7}
+                  disabled={isUpdatingFrequency}
                 >
-                  <Text
-                    style={[
-                      styles.frequencyOptionText,
-                      settings.autoBackupFrequency === frequency &&
-                        styles.frequencyOptionTextActive,
-                    ]}
-                  >
-                    {getBackupFrequencyLabel(frequency)}
-                  </Text>
-                  {settings.autoBackupFrequency === frequency && (
-                    <Check size={16} color="#FFFFFF" />
+                  {isUpdatingFrequency && settings.autoBackupFrequency !== frequency ? (
+                    <ActivityIndicator size="small" color="#94A3B8" />
+                  ) : (
+                    <>
+                      <Text
+                        style={[
+                          styles.frequencyOptionText,
+                          settings.autoBackupFrequency === frequency &&
+                            styles.frequencyOptionTextActive,
+                        ]}
+                      >
+                        {getBackupFrequencyLabel(frequency)}
+                      </Text>
+                      {settings.autoBackupFrequency === frequency && (
+                        <Check size={16} color="#FFFFFF" />
+                      )}
+                    </>
                   )}
                 </TouchableOpacity>
               ))}
@@ -531,6 +548,9 @@ const styles = StyleSheet.create({
   },
   frequencyOptionTextActive: {
     color: '#FFFFFF',
+  },
+  frequencyOptionDisabled: {
+    opacity: 0.5,
   },
   lastBackupText: {
     fontSize: 12,

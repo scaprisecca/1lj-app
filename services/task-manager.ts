@@ -3,6 +3,7 @@ import * as BackgroundFetch from 'expo-background-fetch';
 import { BackupService } from './backup';
 import { SettingsService, type AutoBackupFrequency } from './settings';
 import { Platform } from 'react-native';
+import type { TaskStatus } from '@/types';
 
 // Task name constant
 const BACKUP_TASK_NAME = 'BACKGROUND_BACKUP_TASK';
@@ -273,12 +274,7 @@ export class TaskManagerService {
   /**
    * Get information about the current backup task status
    */
-  static async getTaskStatus(): Promise<{
-    isRegistered: boolean;
-    backgroundFetchStatus: BackgroundFetch.BackgroundFetchStatus;
-    frequency: AutoBackupFrequency;
-    lastBackupTime: string | null;
-  }> {
+  static async getTaskStatus(): Promise<TaskStatus> {
     const [isRegistered, backgroundFetchStatus, frequency, lastBackupTime] = await Promise.all([
       this.isTaskRegistered(),
       this.getBackgroundFetchStatus(),

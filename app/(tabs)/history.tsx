@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { History, Calendar, Download, Upload, Settings, FolderOpen, X, HardDrive, Share } from 'lucide-react-native';
@@ -29,6 +29,8 @@ export default function HistoryScreen() {
   const [historyEntries, setHistoryEntries] = useState<JournalEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isBackingUp, setIsBackingUp] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'history'>('all');
   const [showBackupSettings, setShowBackupSettings] = useState(false);
@@ -140,14 +142,24 @@ export default function HistoryScreen() {
 
   const handleBackup = async () => {
     try {
+      setIsBackingUp(true);
+
       if (Platform.OS !== 'web') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
-      
+
       await BackupService.createBackup('manual');
+
+      if (Platform.OS !== 'web') {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+
       Alert.alert('Success', `Backup created successfully!\n\nLocation: ${getBackupLocationText()}`);
     } catch (error) {
+      console.error('Error creating backup:', error);
       Alert.alert('Error', 'Failed to create backup. Please try again.');
+    } finally {
+      setIsBackingUp(false);
     }
   };
 
@@ -201,11 +213,20 @@ export default function HistoryScreen() {
 
   const processRestoreFile = async (content: string) => {
     try {
+      setIsRestoring(true);
       await BackupService.restoreFromBackup(content);
       await loadEntries(); // Refresh the entries
+
+      if (Platform.OS !== 'web') {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+
       Alert.alert('Success', 'Backup restored successfully!');
     } catch (error) {
+      console.error('Error restoring backup:', error);
       Alert.alert('Error', 'Failed to restore backup. Please check the file format.');
+    } finally {
+      setIsRestoring(false);
     }
   };
 
@@ -437,17 +458,47 @@ export default function HistoryScreen() {
 
         {/* Backup Actions */}
         <View style={styles.backupContainer}>
-          <TouchableOpacity style={styles.backupButton} onPress={handleBackup}>
-            <Download size={16} color="#6366F1" />
-            <Text style={styles.backupButtonText}>Backup</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.backupButton} onPress={handleRestore}>
-            <Upload size={16} color="#6366F1" />
-            <Text style={styles.backupButtonText}>Restore</Text>
+          <TouchableOpacity
+            style={[styles.backupButton, (isBackingUp || isRestoring) && styles.backupButtonDisabled]}
+            onPress={handleBackup}
+            disabled={isBackingUp || isRestoring}
+          >
+            {isBackingUp ? (
+              <>
+                <ActivityIndicator size="small" color="#6366F1" />
+                <Text style={styles.backupButtonText}>Backing up...</Text>
+              </>
+            ) : (
+              <>
+                <Download size={16} color="#6366F1" />
+                <Text style={styles.backupButtonText}>Backup</Text>
+              </>
+            )}
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.backupButton} onPress={() => setShowBackupSettings(true)}>
+          <TouchableOpacity
+            style={[styles.backupButton, (isBackingUp || isRestoring) && styles.backupButtonDisabled]}
+            onPress={handleRestore}
+            disabled={isBackingUp || isRestoring}
+          >
+            {isRestoring ? (
+              <>
+                <ActivityIndicator size="small" color="#6366F1" />
+                <Text style={styles.backupButtonText}>Restoring...</Text>
+              </>
+            ) : (
+              <>
+                <Upload size={16} color="#6366F1" />
+                <Text style={styles.backupButtonText}>Restore</Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.backupButton, (isBackingUp || isRestoring) && styles.backupButtonDisabled]}
+            onPress={() => setShowBackupSettings(true)}
+            disabled={isBackingUp || isRestoring}
+          >
             <Settings size={16} color="#6366F1" />
             <Text style={styles.backupButtonText}>Settings</Text>
           </TouchableOpacity>
@@ -610,6 +661,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6366F1',
     marginLeft: 8,
+  },
+  backupButtonDisabled: {
+    opacity: 0.5,
   },
   // New: Modal styles for backup settings
   modalOverlay: {
