@@ -1,21 +1,22 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect, useRef } from 'react';
-import { Save, Heart, AlertTriangle } from 'lucide-react-native';
+import { Save, Heart, AlertTriangle, CheckCircle2, Clock } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { DatabaseService } from '@/services/database';
 import { BackupService } from '@/services/backup';
 import { isUsingMock } from '@/lib/database/client';
 import { RichTextEditor, type RichTextEditorRef } from '@/components/organisms/RichTextEditor';
+import { useAutoSave } from '@/hooks/useAutoSave';
 
 export default function TodayScreen() {
   const [entry, setEntry] = useState('');
   const [todayEntry, setTodayEntry] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  const [enableAutoSave, setEnableAutoSave] = useState(false);
   const richTextRef = useRef<RichTextEditorRef>(null);
-  
+
   const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
@@ -31,6 +32,8 @@ export default function TodayScreen() {
         // Set the rich text editor content
         richTextRef.current?.setContentHTML(existingEntry.html_body);
       }
+      // Enable auto-save after initial load
+      setEnableAutoSave(true);
     } catch (error) {
       console.error('Error loading today entry:', error);
     } finally {
@@ -38,42 +41,59 @@ export default function TodayScreen() {
     }
   };
 
-  const saveEntry = async () => {
-    if (!entry.trim()) return;
-    
-    setIsSaving(true);
-    
-    try {
-      if (Platform.OS !== 'web') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
+  const saveEntry = async (content: string) => {
+    if (!content.trim()) return;
 
-      if (todayEntry) {
-        await DatabaseService.updateEntry(todayEntry.id, entry.trim());
-      } else {
-        const newEntry = await DatabaseService.createEntry(today, entry.trim());
-        setTodayEntry(newEntry);
-      }
-
-      // Trigger backup (will be mocked if not available)
-      await BackupService.createBackup();
-      
-      Alert.alert('Saved!', 'Your journal entry has been saved to demo storage.');
-    } catch (error) {
-      console.error('Error saving entry:', error);
-      Alert.alert('Error', 'Failed to save your entry. Please try again.');
-    } finally {
-      setIsSaving(false);
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
+
+    if (todayEntry) {
+      await DatabaseService.updateEntry(todayEntry.id, content.trim());
+    } else {
+      const newEntry = await DatabaseService.createEntry(today, content.trim());
+      setTodayEntry(newEntry);
+    }
+
+    // Trigger backup (will be mocked if not available)
+    await BackupService.createBackup();
   };
+
+  // Auto-save hook
+  const { saveNow, isSaving, lastSaved, error: saveError } = useAutoSave(entry, {
+    onSave: saveEntry,
+    delay: 2000,
+    enabled: enableAutoSave && !!entry.trim(),
+    onSaveSuccess: () => {
+      console.log('Auto-saved successfully');
+    },
+    onSaveError: (error) => {
+      console.error('Auto-save error:', error);
+      Alert.alert('Save Error', 'Failed to auto-save your entry. Please try saving manually.');
+    },
+  });
 
   const handleRichTextChange = (html: string) => {
     setEntry(html);
   };
 
-  const handleRichTextBlur = () => {
-    // Auto-save functionality can be added here in the future
-    console.log('Rich text editor blurred');
+  const handleRichTextBlur = async () => {
+    // Save on blur if there's content
+    if (entry.trim()) {
+      await saveNow();
+    }
+  };
+
+  const handleManualSave = async () => {
+    if (!entry.trim()) return;
+
+    try {
+      await saveNow();
+      Alert.alert('Saved!', 'Your journal entry has been saved.');
+    } catch (error) {
+      console.error('Error saving entry:', error);
+      Alert.alert('Error', 'Failed to save your entry. Please try again.');
+    }
   };
 
   const formatDate = (date: string) => {
@@ -83,6 +103,22 @@ export default function TodayScreen() {
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  const formatLastSaved = (date: Date | null) => {
+    if (!date) return null;
+
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+
+    if (diffSecs < 10) return 'just now';
+    if (diffSecs < 60) return `${diffSecs} seconds ago`;
+    if (diffMins === 1) return '1 minute ago';
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
   if (isLoading) {
@@ -110,7 +146,39 @@ export default function TodayScreen() {
         </View>
 
         <View style={styles.header}>
-          <Text style={styles.dateText}>{formatDate(today)}</Text>
+          <View style={styles.headerTop}>
+            <Text style={styles.dateText}>{formatDate(today)}</Text>
+            {/* Save status indicator */}
+            {entry.trim() && (
+              saveError ? (
+                <TouchableOpacity
+                  style={styles.saveStatusContainer}
+                  onPress={handleManualSave}
+                >
+                  <AlertTriangle size={14} color="#EF4444" />
+                  <Text style={styles.saveStatusTextError}>
+                    Save failed - tap to retry
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.saveStatusContainer}>
+                  {isSaving ? (
+                    <>
+                      <ActivityIndicator size="small" color="#6366F1" />
+                      <Text style={styles.saveStatusText}>Saving...</Text>
+                    </>
+                  ) : lastSaved ? (
+                    <>
+                      <CheckCircle2 size={14} color="#10B981" />
+                      <Text style={styles.saveStatusTextSaved}>
+                        Saved {formatLastSaved(lastSaved)}
+                      </Text>
+                    </>
+                  ) : null}
+                </View>
+              )
+            )}
+          </View>
           <Text style={styles.subtitle}>How was your day? Write with rich formatting!</Text>
         </View>
 
@@ -120,16 +188,19 @@ export default function TodayScreen() {
             value={entry}
             onChange={handleRichTextChange}
             onBlur={handleRichTextBlur}
+            onSave={handleManualSave}
             placeholder="Write about your day... Use the toolbar below to format your text with bold, italic, headings, and lists."
             style={styles.richTextEditor}
             showCharacterCount={true}
+            showSaveButton={true}
+            isSaving={isSaving}
           />
         </View>
 
         <View style={styles.bottomContainer}>
           <TouchableOpacity
             style={[styles.saveButton, { opacity: entry.trim() ? 1 : 0.5 }]}
-            onPress={saveEntry}
+            onPress={handleManualSave}
             disabled={!entry.trim() || isSaving}
           >
             <LinearGradient
@@ -178,11 +249,39 @@ const styles = StyleSheet.create({
     paddingTop: 32,
     paddingBottom: 24,
   },
+  headerTop: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
   dateText: {
     fontFamily: 'Inter-Bold',
     fontSize: 28,
     color: '#1E293B',
     marginBottom: 8,
+  },
+  saveStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  saveStatusText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 13,
+    color: '#6366F1',
+    marginLeft: 6,
+  },
+  saveStatusTextSaved: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 13,
+    color: '#10B981',
+    marginLeft: 6,
+  },
+  saveStatusTextError: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 13,
+    color: '#EF4444',
+    marginLeft: 6,
   },
   subtitle: {
     fontFamily: 'Inter-Regular',

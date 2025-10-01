@@ -1,17 +1,21 @@
 import React, { useRef, useImperativeHandle, forwardRef, useState, useEffect } from 'react';
-import { View, StyleSheet, Platform, Text } from 'react-native';
+import { View, StyleSheet, Platform, Text, TouchableOpacity } from 'react-native';
 import { RichEditor, RichToolbar, actions } from 'react-native-pell-rich-editor';
 import { countHtmlCharacters, isHtmlEmpty } from '@/utils/html';
+import { Save } from 'lucide-react-native';
 
 interface RichTextEditorProps {
   value?: string;
   onChange?: (html: string) => void;
   onBlur?: () => void;
+  onSave?: () => void;
   placeholder?: string;
   disabled?: boolean;
   style?: any;
   showCharacterCount?: boolean;
   characterLimit?: number;
+  showSaveButton?: boolean;
+  isSaving?: boolean;
 }
 
 export interface RichTextEditorRef {
@@ -22,15 +26,18 @@ export interface RichTextEditorRef {
 }
 
 export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
-  ({ 
-    value = '', 
-    onChange, 
-    onBlur, 
-    placeholder, 
-    disabled = false, 
-    style, 
+  ({
+    value = '',
+    onChange,
+    onBlur,
+    onSave,
+    placeholder,
+    disabled = false,
+    style,
     showCharacterCount = false,
-    characterLimit 
+    characterLimit,
+    showSaveButton = false,
+    isSaving = false
   }, ref) => {
     const richTextRef = useRef<RichEditor>(null);
     const [characterCount, setCharacterCount] = useState(0);
@@ -92,25 +99,39 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
           initialHeight={200}
         />
         
-        <RichToolbar
-          editor={richTextRef}
-          actions={[
-            actions.setBold,
-            actions.setItalic,
-            actions.setUnderline,
-            actions.heading1,
-            actions.heading2,
-            actions.setParagraph,
-            actions.insertBulletsList,
-            actions.insertOrderedList,
-            actions.undo,
-            actions.redo,
-          ]}
-          iconTint="#6366F1"
-          selectedIconTint="#8B5CF6"
-          style={styles.toolbar}
-          flatContainerStyle={styles.toolbarContainer}
-        />
+        <View style={styles.toolbarWrapper}>
+          <RichToolbar
+            editor={richTextRef}
+            actions={[
+              actions.setBold,
+              actions.setItalic,
+              actions.setUnderline,
+              actions.heading1,
+              actions.heading2,
+              actions.setParagraph,
+              actions.insertBulletsList,
+              actions.insertOrderedList,
+              actions.undo,
+              actions.redo,
+            ]}
+            iconTint="#6366F1"
+            selectedIconTint="#8B5CF6"
+            style={styles.toolbar}
+            flatContainerStyle={styles.toolbarContainer}
+          />
+          {showSaveButton && (
+            <TouchableOpacity
+              style={styles.saveButton}
+              onPress={onSave}
+              disabled={isSaving || disabled}
+            >
+              <Save size={18} color={isSaving ? "#94A3B8" : "#6366F1"} />
+              <Text style={[styles.saveButtonText, isSaving && styles.saveButtonTextDisabled]}>
+                {isSaving ? 'Saving...' : 'Save'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
         
         {showCharacterCount && (
           <View style={styles.characterCountContainer}>
@@ -154,15 +175,41 @@ const styles = StyleSheet.create({
     minHeight: 200,
     backgroundColor: 'white',
   },
-  toolbar: {
+  toolbarWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#F8FAFC',
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
+  },
+  toolbar: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
     minHeight: 50,
   },
   toolbarContainer: {
     paddingHorizontal: 12,
     paddingVertical: 8,
+  },
+  saveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderLeftWidth: 1,
+    borderLeftColor: '#E2E8F0',
+    minHeight: 50,
+    justifyContent: 'center',
+  },
+  saveButtonText: {
+    fontSize: 14,
+    color: '#6366F1',
+    marginLeft: 6,
+    fontFamily: Platform.OS === 'ios' ? 'Inter' : 'Inter-SemiBold',
+    fontWeight: '600',
+  },
+  saveButtonTextDisabled: {
+    color: '#94A3B8',
   },
   characterCountContainer: {
     backgroundColor: '#F8FAFC',

@@ -25,8 +25,9 @@ After analyzing the codebase against the PRD requirements, the following major v
 
 ## Relevant Files
 
-- `app/(tabs)/index.tsx` - **MODIFIED**: Updated to use RichTextEditor and new schema field names
-- `components/organisms/RichTextEditor.tsx` - **NEW**: Rich text editor component using react-native-pell-rich-editor with character counting
+- `app/(tabs)/index.tsx` - **MODIFIED**: Updated to use RichTextEditor, new schema field names, and auto-save functionality
+- `components/organisms/RichTextEditor.tsx` - **MODIFIED**: Rich text editor component with character counting, save button in toolbar, and save/blur callbacks
+- `hooks/useAutoSave.ts` - **NEW**: Auto-save hook with debouncing, conflict handling, and error management
 - `utils/html.ts` - **NEW**: HTML utility functions for text conversion and character counting
 - `app/(tabs)/settings.tsx` - **NEW**: Complete settings screen per F-5 requirements
 - `app/entry/[date].tsx` - **NEW**: Entry details screen for read-only view with edit capability
@@ -63,12 +64,12 @@ After analyzing the codebase against the PRD requirements, the following major v
   - [x] 1.5 Implement HTML-to-display conversion for existing screens
   - [x] 1.6 Add character count functionality that works with HTML content
 
-- [ ] 3.0 Implement Auto-Save Functionality
-  - [ ] 3.1 Create useAutoSave hook for automatic saving
-  - [ ] 3.2 Implement save-on-blur functionality for text editor
-  - [ ] 3.3 Add toolbar Save button with manual save capability
-  - [ ] 3.4 Add saving indicators and feedback
-  - [ ] 3.5 Handle auto-save conflicts and error scenarios
+- [x] 3.0 Implement Auto-Save Functionality
+  - [x] 3.1 Create useAutoSave hook for automatic saving
+  - [x] 3.2 Implement save-on-blur functionality for text editor
+  - [x] 3.3 Add toolbar Save button with manual save capability
+  - [x] 3.4 Add saving indicators and feedback
+  - [x] 3.5 Handle auto-save conflicts and error scenarios
 
 - [ ] 4.0 Create Entry Details Screen
   - [ ] 4.1 Create entry/[date].tsx route for entry details
