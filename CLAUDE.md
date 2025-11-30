@@ -84,15 +84,22 @@ Two main tables defined in `lib/database/schema.ts`:
 
 1. **Database Mock Mode**: The app currently uses mock data instead of real SQLite when running in Expo Go. The `DatabaseService` class automatically handles both modes.
 
-2. **Font Loading**: App waits for Inter fonts to load before rendering. Custom font families available: `Inter-Regular`, `Inter-Medium`, `Inter-SemiBold`, `Inter-Bold`.
+2. **Widget Support**: The app includes native home screen widget functionality, but it requires a development build:
+   - **Custom Native Module**: `modules/widget-manager/` contains iOS (Swift) and Android (Kotlin) implementations
+   - **Expo Go Limitation**: Widgets will NOT work in Expo Go - requires `npx expo run:ios` or `npx expo run:android`
+   - **Graceful Degradation**: The `WidgetService` automatically detects Expo Go and skips widget updates without errors
+   - **Service Layer**: `services/widget.ts` handles widget data sharing via AsyncStorage
+   - To test widgets, you must build and run on a physical device or simulator with a development build
 
-3. **Splash Screen**: Manually controlled in `app/_layout.tsx` - hidden only after fonts and database are ready.
+3. **Font Loading**: App waits for Inter fonts to load before rendering. Custom font families available: `Inter-Regular`, `Inter-Medium`, `Inter-SemiBold`, `Inter-Bold`.
 
-4. **Code Style**: Follow the Expo best practices defined in `.cursor/rules/expo-rule.mdc`:
+4. **Splash Screen**: Manually controlled in `app/_layout.tsx` - hidden only after fonts and database are ready.
+
+5. **Code Style**: Follow the Expo best practices defined in `.cursor/rules/expo-rule.mdc`:
    - Use functional components (no classes)
    - TypeScript with strict mode
    - Interfaces over types
    - Avoid enums (use union types)
    - Descriptive variable names with auxiliary verbs
 
-5. **Cursor Rules**: Development guidelines are stored in `.cursor/rules/` directory. All rule files use `.mdc` extension and follow a specific frontmatter format.
+6. **Cursor Rules**: Development guidelines are stored in `.cursor/rules/` directory. All rule files use `.mdc` extension and follow a specific frontmatter format.

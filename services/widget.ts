@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DatabaseService } from './database';
 import type { JournalEntry } from '@/lib/database/schema';
-import WidgetManager from '@/modules/widget-manager';
+import WidgetManager, { isWidgetManagerEnabled } from '@/modules/widget-manager';
 import { logError, createWidgetError } from '@/utils/errorHandling';
 
 const WIDGET_DATA_KEY = '@widget_today_entry';
@@ -67,12 +67,14 @@ export class WidgetService {
       await AsyncStorage.setItem(WIDGET_DATA_KEY, JSON.stringify(widgetData));
       await AsyncStorage.setItem(WIDGET_LAST_UPDATE_KEY, widgetData.lastUpdate);
 
-      // Trigger widget refresh on native side
-      try {
-        await WidgetManager.reloadWidgets();
-      } catch (error) {
-        // Widget reload may not be supported on all platforms
-        logError(error, 'WidgetService.reloadWidgets');
+      // Trigger widget refresh on native side (only if available)
+      if (isWidgetManagerEnabled()) {
+        try {
+          await WidgetManager.reloadWidgets();
+        } catch (error) {
+          // Widget reload may not be supported on all platforms
+          logError(error, 'WidgetService.reloadWidgets');
+        }
       }
     } catch (error) {
       logError(error, 'WidgetService.updateWidgetData');
