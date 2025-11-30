@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Widget functionality now works gracefully in Expo Go without throwing "widget-manager not linked" errors. Widget updates are automatically skipped when running in development mode and fully enabled in production builds.
+- SQLite migration error now resolves correctly during database initialization
 
 ### Changed
 - Updated CLAUDE.md with widget support documentation explaining the difference between Expo Go and development builds
