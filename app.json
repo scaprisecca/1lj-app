@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.scaprisecca.boltexponativewind"
+      "bundleIdentifier": "com.scaprisecca.onelinejournal"
     },
     "web": {
       "bundler": "metro",
@@ -34,7 +34,7 @@
       "typedRoutes": true
     },
     "android": {
-      "package": "com.scaprisecca.boltexponativewind"
+      "package": "com.scaprisecca.onelinejournal"
     }
   }
 }

@@ -149,7 +149,7 @@ export default function TodayScreen() {
         <View style={styles.warningContainer}>
           <AlertTriangle size={16} color="#F59E0B" />
           <Text style={styles.warningText}>
-            🚀 Demo Mode: App is working! Data is temporary and won't persist between sessions. Use Expo Development Client for full functionality.
+            🚀 Demo Mode: App is working! Data is temporary and won&apos;t persist between sessions. Use Expo Development Client for full functionality.
           </Text>
         </View>
 
