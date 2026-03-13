@@ -14,7 +14,7 @@ interface CalendarGridProps {
 
 export function CalendarGrid({ year, month, entries, selectedDate, onDateSelect }: CalendarGridProps) {
   const screenWidth = Dimensions.get('window').width;
-  const cellSize = (screenWidth - 48) / 7; // 24px padding on each side
+  const cellSize = (screenWidth - 80) / 7; // 24px margin + 16px padding on each side
   
   const daysInMonth = new Date(year, month, 0).getDate();
   const firstDayOfWeek = new Date(year, month - 1, 1).getDay();
