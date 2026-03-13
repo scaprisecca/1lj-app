@@ -272,12 +272,14 @@ export default function TodayScreen() {
               </LinearGradient>
             </TouchableOpacity>
 
-            <View style={styles.motivationContainer}>
-              <Heart size={16} color="#F59E0B" />
-              <Text style={styles.motivationText}>
-                Every day is a new page in your story
-              </Text>
-            </View>
+            {!entry.trim() && (
+              <View style={styles.motivationContainer}>
+                <Heart size={16} color="#F59E0B" />
+                <Text style={styles.motivationText}>
+                  Every day is a new page in your story
+                </Text>
+              </View>
+            )}
           </View>
         </KeyboardAvoidingView>
       </LinearGradient>
@@ -308,8 +310,8 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 24,
+    paddingTop: 16,
+    paddingBottom: 12,
   },
   headerTop: {
     flexDirection: 'column',
@@ -368,18 +370,18 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     paddingHorizontal: 24,
-    paddingBottom: 32,
+    paddingBottom: 16,
   },
   saveButton: {
     borderRadius: 12,
     overflow: 'hidden',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   saveButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: 12,
     paddingHorizontal: 24,
   },
   saveButtonText: {
@@ -416,9 +418,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FEF3C7',
-    padding: 12,
+    padding: 8,
     marginHorizontal: 24,
-    marginTop: 16,
+    marginTop: 8,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#FCD34D',
