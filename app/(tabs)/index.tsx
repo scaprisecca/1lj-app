@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect, useRef } from 'react';
 import { Save, Heart, AlertTriangle, CheckCircle2, Clock } from 'lucide-react-native';
@@ -9,6 +9,7 @@ import { BackupService } from '@/services/backup';
 import { WidgetService } from '@/services/widget';
 import { isUsingMock } from '@/lib/database/client';
 import { RichTextEditor, type RichTextEditorRef } from '@/components/organisms/RichTextEditor';
+import { RichToolbar, actions, RichEditor } from 'react-native-pell-rich-editor';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import type { JournalEntry } from '@/lib/database/schema';
 
@@ -17,7 +18,10 @@ export default function TodayScreen() {
   const [todayEntry, setTodayEntry] = useState<JournalEntry | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [enableAutoSave, setEnableAutoSave] = useState<boolean>(false);
+  const [hasSavedContent, setHasSavedContent] = useState<boolean>(false);
   const richTextRef = useRef<RichTextEditorRef>(null);
+  const externalEditorRef = useRef<RichEditor>(null);
+  const savedBodyRef = useRef<string>('');
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -31,9 +35,9 @@ export default function TodayScreen() {
       const existingEntry = await DatabaseService.getEntryByDate(today);
       if (existingEntry) {
         setTodayEntry(existingEntry);
-        setEntry(existingEntry.html_body);
-        // Set the rich text editor content
-        richTextRef.current?.setContentHTML(existingEntry.html_body);
+        savedBodyRef.current = existingEntry.html_body;
+        setHasSavedContent(true);
+        // Editor starts empty — existing content is the "base" for appending
       }
       // Enable auto-save after initial load
       setEnableAutoSave(true);
@@ -52,10 +56,14 @@ export default function TodayScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
 
+    const combinedContent = savedBodyRef.current
+      ? `${savedBodyRef.current}<br><br>${content.trim()}`
+      : content.trim();
+
     if (todayEntry) {
-      await DatabaseService.updateEntry(todayEntry.id, content.trim());
+      await DatabaseService.updateEntry(todayEntry.id, combinedContent);
     } else {
-      const newEntry = await DatabaseService.createEntry(today, content.trim());
+      const newEntry = await DatabaseService.createEntry(today, combinedContent);
       setTodayEntry(newEntry);
     }
 
@@ -96,6 +104,14 @@ export default function TodayScreen() {
 
     try {
       await saveNow();
+      // Advance the base to include what was just saved
+      savedBodyRef.current = savedBodyRef.current
+        ? `${savedBodyRef.current}<br><br>${entry.trim()}`
+        : entry.trim();
+      setHasSavedContent(true);
+      // Clear editor for next note
+      setEntry('');
+      richTextRef.current?.setContentHTML('');
       Alert.alert('Saved!', 'Your journal entry has been saved.');
     } catch (error) {
       console.error('Error saving entry:', error);
@@ -145,90 +161,124 @@ export default function TodayScreen() {
         colors={['#F8FAFC', '#F1F5F9']}
         style={styles.gradient}
       >
-        {/* Demo Mode Warning - Always show since we're always in mock mode */}
-        <View style={styles.warningContainer}>
-          <AlertTriangle size={16} color="#F59E0B" />
-          <Text style={styles.warningText}>
-            🚀 Demo Mode: App is working! Data is temporary and won&apos;t persist between sessions. Use Expo Development Client for full functionality.
-          </Text>
-        </View>
-
-        <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <Text style={styles.dateText}>{formatDate(today)}</Text>
-            {/* Save status indicator */}
-            {entry.trim() && (
-              saveError ? (
-                <TouchableOpacity
-                  style={styles.saveStatusContainer}
-                  onPress={handleManualSave}
-                >
-                  <AlertTriangle size={14} color="#EF4444" />
-                  <Text style={styles.saveStatusTextError}>
-                    Save failed - tap to retry
-                  </Text>
-                </TouchableOpacity>
-              ) : (
-                <View style={styles.saveStatusContainer}>
-                  {isSaving ? (
-                    <>
-                      <ActivityIndicator size="small" color="#6366F1" />
-                      <Text style={styles.saveStatusText}>Saving...</Text>
-                    </>
-                  ) : lastSaved ? (
-                    <>
-                      <CheckCircle2 size={14} color="#10B981" />
-                      <Text style={styles.saveStatusTextSaved}>
-                        Saved {formatLastSaved(lastSaved)}
-                      </Text>
-                    </>
-                  ) : null}
-                </View>
-              )
-            )}
-          </View>
-          <Text style={styles.subtitle}>How was your day? Write with rich formatting!</Text>
-        </View>
-
-        <View style={styles.inputContainer}>
-          <RichTextEditor
-            ref={richTextRef}
-            value={entry}
-            onChange={handleRichTextChange}
-            onBlur={handleRichTextBlur}
-            onSave={handleManualSave}
-            placeholder="Write about your day... Use the toolbar below to format your text with bold, italic, headings, and lists."
-            style={styles.richTextEditor}
-            showCharacterCount={true}
-            showSaveButton={true}
-            isSaving={isSaving}
-          />
-        </View>
-
-        <View style={styles.bottomContainer}>
-          <TouchableOpacity
-            style={[styles.saveButton, { opacity: entry.trim() ? 1 : 0.5 }]}
-            onPress={handleManualSave}
-            disabled={!entry.trim() || isSaving}
-          >
-            <LinearGradient
-              colors={['#6366F1', '#8B5CF6']}
-              style={styles.saveButtonGradient}
-            >
-              <Save size={20} color="white" />
-              <Text style={styles.saveButtonText}>
-                {isSaving ? 'Saving...' : 'Save Entry'}
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <View style={styles.motivationContainer}>
-            <Heart size={16} color="#F59E0B" />
-            <Text style={styles.motivationText}>
-              Every day is a new page in your story
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardAvoidingView}
+        >
+          {/* Demo Mode Warning - Always show since we're always in mock mode */}
+          <View style={styles.warningContainer}>
+            <AlertTriangle size={16} color="#F59E0B" />
+            <Text style={styles.warningText}>
+              🚀 Demo Mode: App is working! Data is temporary and won&apos;t persist between sessions. Use Expo Development Client for full functionality.
             </Text>
           </View>
-        </View>
+
+          <View style={styles.header}>
+            <View style={styles.headerTop}>
+              <Text style={styles.dateText}>{formatDate(today)}</Text>
+              {/* Save status indicator */}
+              {entry.trim() && (
+                saveError ? (
+                  <TouchableOpacity
+                    style={styles.saveStatusContainer}
+                    onPress={handleManualSave}
+                  >
+                    <AlertTriangle size={14} color="#EF4444" />
+                    <Text style={styles.saveStatusTextError}>
+                      Save failed - tap to retry
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.saveStatusContainer}>
+                    {isSaving ? (
+                      <>
+                        <ActivityIndicator size="small" color="#6366F1" />
+                        <Text style={styles.saveStatusText}>Saving...</Text>
+                      </>
+                    ) : lastSaved ? (
+                      <>
+                        <CheckCircle2 size={14} color="#10B981" />
+                        <Text style={styles.saveStatusTextSaved}>
+                          Saved {formatLastSaved(lastSaved)}
+                        </Text>
+                      </>
+                    ) : null}
+                  </View>
+                )
+              )}
+            </View>
+            <Text style={styles.subtitle}>
+              {hasSavedContent
+                ? 'You have notes today — add more below'
+                : 'How was your day? Write with rich formatting!'}
+            </Text>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <RichTextEditor
+              ref={richTextRef}
+              editorRef={externalEditorRef}
+              value={entry}
+              onChange={handleRichTextChange}
+              onBlur={handleRichTextBlur}
+              onSave={handleManualSave}
+              placeholder="Write about your day... Use the toolbar above the keyboard to format your text."
+              style={styles.richTextEditor}
+              showCharacterCount={true}
+              showSaveButton={false}
+              showToolbar={false}
+              isSaving={isSaving}
+            />
+          </View>
+
+          {/* Sticky toolbar — stays above keyboard */}
+          <View style={styles.stickyToolbar}>
+            <RichToolbar
+              editor={externalEditorRef}
+              actions={[
+                actions.setBold,
+                actions.setItalic,
+                actions.setUnderline,
+                actions.heading1,
+                actions.heading2,
+                actions.setParagraph,
+                actions.insertBulletsList,
+                actions.insertOrderedList,
+                actions.undo,
+                actions.redo,
+              ]}
+              iconTint="#6366F1"
+              selectedIconTint="#8B5CF6"
+              style={styles.toolbar}
+              flatContainerStyle={styles.toolbarContainer}
+            />
+          </View>
+
+          <View style={styles.bottomContainer}>
+            <TouchableOpacity
+              style={[styles.saveButton, { opacity: entry.trim() ? 1 : 0.5 }]}
+              onPress={handleManualSave}
+              disabled={!entry.trim() || isSaving}
+            >
+              <LinearGradient
+                colors={['#6366F1', '#8B5CF6']}
+                style={styles.saveButtonGradient}
+              >
+                <Save size={20} color="white" />
+                <Text style={styles.saveButtonText}>
+                  {isSaving ? 'Saving...' : 'Save Entry'}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <View style={styles.motivationContainer}>
+              <Heart size={16} color="#F59E0B" />
+              <Text style={styles.motivationText}>
+                Every day is a new page in your story
+              </Text>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
       </LinearGradient>
     </SafeAreaView>
   );
@@ -240,6 +290,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   gradient: {
+    flex: 1,
+  },
+  keyboardAvoidingView: {
     flex: 1,
   },
   loadingContainer: {
@@ -344,6 +397,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#F59E0B',
     marginLeft: 8,
+  },
+  stickyToolbar: {
+    backgroundColor: '#F8FAFC',
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+  },
+  toolbar: {
+    backgroundColor: '#F8FAFC',
+    minHeight: 50,
+  },
+  toolbarContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   warningContainer: {
     flexDirection: 'row',

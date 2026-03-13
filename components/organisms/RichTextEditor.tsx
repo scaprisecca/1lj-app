@@ -16,6 +16,8 @@ interface RichTextEditorProps {
   characterLimit?: number;
   showSaveButton?: boolean;
   isSaving?: boolean;
+  editorRef?: React.RefObject<RichEditor>;
+  showToolbar?: boolean;
 }
 
 export interface RichTextEditorRef {
@@ -37,9 +39,12 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
     showCharacterCount = false,
     characterLimit,
     showSaveButton = false,
-    isSaving = false
+    isSaving = false,
+    editorRef,
+    showToolbar = true,
   }, ref) => {
-    const richTextRef = useRef<RichEditor>(null);
+    const internalRef = useRef<RichEditor>(null);
+    const richTextRef = editorRef ?? internalRef;
     const [characterCount, setCharacterCount] = useState(0);
 
     useImperativeHandle(ref, () => ({
@@ -132,39 +137,41 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
           initialHeight={200}
         />
         
-        <View style={styles.toolbarWrapper}>
-          <RichToolbar
-            editor={richTextRef}
-            actions={[
-              actions.setBold,
-              actions.setItalic,
-              actions.setUnderline,
-              actions.heading1,
-              actions.heading2,
-              actions.setParagraph,
-              actions.insertBulletsList,
-              actions.insertOrderedList,
-              actions.undo,
-              actions.redo,
-            ]}
-            iconTint="#6366F1"
-            selectedIconTint="#8B5CF6"
-            style={styles.toolbar}
-            flatContainerStyle={styles.toolbarContainer}
-          />
-          {showSaveButton && (
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={onSave}
-              disabled={isSaving || disabled}
-            >
-              <Save size={18} color={isSaving ? "#94A3B8" : "#6366F1"} />
-              <Text style={[styles.saveButtonText, isSaving && styles.saveButtonTextDisabled]}>
-                {isSaving ? 'Saving...' : 'Save'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        {showToolbar && (
+          <View style={styles.toolbarWrapper}>
+            <RichToolbar
+              editor={richTextRef}
+              actions={[
+                actions.setBold,
+                actions.setItalic,
+                actions.setUnderline,
+                actions.heading1,
+                actions.heading2,
+                actions.setParagraph,
+                actions.insertBulletsList,
+                actions.insertOrderedList,
+                actions.undo,
+                actions.redo,
+              ]}
+              iconTint="#6366F1"
+              selectedIconTint="#8B5CF6"
+              style={styles.toolbar}
+              flatContainerStyle={styles.toolbarContainer}
+            />
+            {showSaveButton && (
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={onSave}
+                disabled={isSaving || disabled}
+              >
+                <Save size={18} color={isSaving ? "#94A3B8" : "#6366F1"} />
+                <Text style={[styles.saveButtonText, isSaving && styles.saveButtonTextDisabled]}>
+                  {isSaving ? 'Saving...' : 'Save'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
         
         {showCharacterCount && (
           <View style={styles.characterCountContainer}>
