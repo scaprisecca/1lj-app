@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ChevronLeft, ChevronRight, Plus, ChevronDown, X } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Plus, ChevronDown, X, CalendarCheck } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { CalendarGrid } from '@/components/molecules/CalendarGrid';
 import { HistoryCard } from '@/components/molecules/HistoryCard';
@@ -10,6 +10,7 @@ import { LoadingSpinner } from '@/components/atoms/LoadingSpinner';
 import { ErrorMessage } from '@/components/atoms/ErrorMessage';
 import { DatabaseService } from '@/services/database';
 import type { JournalEntry } from '@/lib/database/schema';
+import { formatDateString } from '@/lib/utils/date';
 
 export default function CalendarScreen() {
   const router = useRouter();
@@ -94,6 +95,18 @@ export default function CalendarScreen() {
     });
   };
 
+  const isCurrentMonth = () => {
+    const today = new Date();
+    return currentDate.getFullYear() === today.getFullYear() &&
+      currentDate.getMonth() === today.getMonth();
+  };
+
+  const goToToday = () => {
+    setCurrentDate(new Date());
+    setSelectedDate('');
+    setSelectedEntry(null);
+  };
+
   const handleYearSelect = (year: number) => {
     const newDate = new Date(currentDate);
     newDate.setFullYear(year);
@@ -162,6 +175,14 @@ export default function CalendarScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* Today Button */}
+          {!isCurrentMonth() && (
+            <TouchableOpacity style={styles.todayButton} onPress={goToToday}>
+              <CalendarCheck size={14} color="#6366F1" />
+              <Text style={styles.todayButtonText}>Today</Text>
+            </TouchableOpacity>
+          )}
+
           {/* Calendar Grid */}
           {isLoading ? (
             <View style={styles.loadingContainer}>
@@ -182,7 +203,7 @@ export default function CalendarScreen() {
           {selectedDate && (
             <View style={styles.selectedDateContainer}>
               <Text style={styles.selectedDateTitle}>
-                {new Date(selectedDate).toLocaleDateString('en-US', {
+                {formatDateString(selectedDate, {
                   weekday: 'long',
                   month: 'long',
                   day: 'numeric',
@@ -337,6 +358,29 @@ const styles = StyleSheet.create({
   // New: Dropdown icon for year picker
   dropdownIcon: {
     marginLeft: 8,
+  },
+  todayButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#6366F1',
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  todayButtonText: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 13,
+    color: '#6366F1',
   },
   loadingContainer: {
     alignItems: 'center',

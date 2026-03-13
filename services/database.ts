@@ -2,19 +2,20 @@ import { getDatabase, isUsingMock } from '@/lib/database/client';
 import { journalEntries, type JournalEntry, type NewJournalEntry } from '@/lib/database/schema';
 import { eq, desc, sql } from 'drizzle-orm';
 import { logError, createDatabaseError } from '@/utils/errorHandling';
+import { getTodayString } from '@/lib/utils/date';
 
 // Mock data for when SQLite is not available
 const mockEntries: JournalEntry[] = [
   {
     id: 1,
-    entry_date: new Date().toISOString().split('T')[0],
+    entry_date: getTodayString(),
     html_body: '<p>Welcome to your journal! This is a sample entry showing how the app works.</p>',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
   {
     id: 2,
-    entry_date: new Date(Date.now() - 86400000).toISOString().split('T')[0], // Yesterday
+    entry_date: (() => { const d = new Date(); d.setDate(d.getDate() - 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })(), // Yesterday
     html_body: '<p>Yesterday was a good day. I learned something new about <strong>React Native</strong> development.</p>',
     created_at: new Date(Date.now() - 86400000).toISOString(),
     updated_at: new Date(Date.now() - 86400000).toISOString(),

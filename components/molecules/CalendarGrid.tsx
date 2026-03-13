@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { JournalEntry } from '@/lib/database/schema';
+import { getTodayString } from '@/lib/utils/date';
 
 interface CalendarGridProps {
   year: number;
@@ -21,7 +22,7 @@ export function CalendarGrid({ year, month, entries, selectedDate, onDateSelect 
   const entryDates = new Set(entries.map(entry => entry.entry_date));
   
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayString();
   
   const renderDay = (day: number) => {
     const date = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;

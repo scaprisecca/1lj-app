@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Calendar, Edit3 } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
 import type { JournalEntry } from '@/lib/database/schema';
+import { formatDateString, parseDateString } from '@/lib/utils/date';
 
 interface HistoryCardProps {
   entry: JournalEntry;
@@ -12,8 +13,7 @@ interface HistoryCardProps {
 
 export function HistoryCard({ entry, onPress, showDate = true }: HistoryCardProps) {
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    return formatDateString(dateString, {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -21,7 +21,7 @@ export function HistoryCard({ entry, onPress, showDate = true }: HistoryCardProp
   };
   
   const formatRelativeDate = (dateString: string) => {
-    const date = new Date(dateString);
+    const date = parseDateString(dateString);
     const now = new Date();
     const diffTime = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));

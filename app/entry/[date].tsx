@@ -14,6 +14,7 @@ import RenderHtml from 'react-native-render-html';
 import { useWindowDimensions } from 'react-native';
 import { showErrorAlert, logError } from '@/utils/errorHandling';
 import type { JournalEntry } from '@/lib/database/schema';
+import { formatDateString } from '@/lib/utils/date';
 
 export default function EntryDetailScreen() {
   const { date } = useLocalSearchParams<{ date: string }>();
@@ -151,7 +152,7 @@ export default function EntryDetailScreen() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return formatDateString(dateString, {
       weekday: 'long',
       year: 'numeric',
       month: 'long',

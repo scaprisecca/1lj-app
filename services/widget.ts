@@ -3,6 +3,7 @@ import { DatabaseService } from './database';
 import type { JournalEntry } from '@/lib/database/schema';
 import WidgetManager, { isWidgetManagerEnabled } from '@/modules/widget-manager';
 import { logError, createWidgetError } from '@/utils/errorHandling';
+import { getTodayString } from '@/lib/utils/date';
 
 const WIDGET_DATA_KEY = '@widget_today_entry';
 const WIDGET_LAST_UPDATE_KEY = '@widget_last_update';
@@ -48,7 +49,7 @@ export class WidgetService {
    */
   static async updateWidgetData(): Promise<void> {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getTodayString();
       const entry = await DatabaseService.getEntryByDate(today);
 
       if (!entry && entry !== null) {
@@ -114,7 +115,7 @@ export class WidgetService {
     }
 
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getTodayString();
       const entry = await DatabaseService.getEntryByDate(today);
 
       // Format timestamp

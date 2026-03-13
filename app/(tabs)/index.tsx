@@ -12,6 +12,7 @@ import { RichTextEditor, type RichTextEditorRef } from '@/components/organisms/R
 import { RichToolbar, actions, RichEditor } from 'react-native-pell-rich-editor';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import type { JournalEntry } from '@/lib/database/schema';
+import { getTodayString, formatDateString } from '@/lib/utils/date';
 
 export default function TodayScreen() {
   const [entry, setEntry] = useState<string>('');
@@ -23,7 +24,7 @@ export default function TodayScreen() {
   const externalEditorRef = useRef<RichEditor>(null);
   const savedBodyRef = useRef<string>('');
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayString();
 
   useEffect(() => {
     loadTodayEntry();
@@ -120,7 +121,7 @@ export default function TodayScreen() {
   };
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-US', {
+    return formatDateString(date, {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
