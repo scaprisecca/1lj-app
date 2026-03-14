@@ -43,6 +43,9 @@ export default function EntryDetailScreen() {
       if (existingEntry) {
         setEntry(existingEntry);
         setEditedContent(existingEntry.html_body);
+      } else {
+        setIsEditMode(true);
+        setEnableAutoSave(true);
       }
     } catch (error) {
       logError(error, 'EntryDetailScreen.loadEntry');
@@ -53,17 +56,21 @@ export default function EntryDetailScreen() {
   };
 
   const saveEntry = async (content: string) => {
-    if (!entry || !content.trim()) return;
+    if (!content.trim()) return;
 
     try {
       if (Platform.OS !== 'web') {
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
 
-      await DatabaseService.updateEntry(entry.id, content.trim());
-
-      // Update local state
-      setEntry({ ...entry, html_body: content.trim() });
+      if (!entry) {
+        const newEntry = await DatabaseService.createEntry(date as string, content.trim());
+        setEntry(newEntry);
+        setEditedContent(newEntry.html_body);
+      } else {
+        await DatabaseService.updateEntry(entry.id, content.trim());
+        setEntry({ ...entry, html_body: content.trim() });
+      }
 
       // Trigger backup (don't block on errors)
       BackupService.createBackup().catch((err) => {
@@ -203,21 +210,6 @@ export default function EntryDetailScreen() {
     );
   }
 
-  if (!entry) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ArrowLeft size={24} color="#1E293B" />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No entry found for this date</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
@@ -231,7 +223,7 @@ export default function EntryDetailScreen() {
           </TouchableOpacity>
 
           <View style={styles.headerCenter}>
-            <Text style={styles.dateText}>{formatDate(entry.entry_date)}</Text>
+            <Text style={styles.dateText}>{formatDate(entry?.entry_date ?? (date as string))}</Text>
           </View>
 
           {!isEditMode ? (
@@ -255,7 +247,7 @@ export default function EntryDetailScreen() {
             <View style={styles.contentCard}>
               <RenderHtml
                 contentWidth={width - 96}
-                source={{ html: entry.html_body }}
+                source={{ html: entry?.html_body ?? '' }}
                 baseStyle={styles.htmlContent}
               />
             </View>

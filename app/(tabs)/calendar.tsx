@@ -79,9 +79,7 @@ export default function CalendarScreen() {
 
   const handleCreateEntry = () => {
     if (!selectedDate) return;
-
-    // Navigate to today screen or entry creation (for now, just go to today screen)
-    router.push('/(tabs)/');
+    router.push(`/entry/${selectedDate}`);
   };
 
   const navigateToEntry = (date: string) => {
