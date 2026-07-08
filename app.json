@@ -35,6 +35,12 @@
     },
     "android": {
       "package": "com.scaprisecca.onelinejournal"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e07bb381-9c61-47cd-a34b-d359a4346e7e"
+      }
     }
   }
 }

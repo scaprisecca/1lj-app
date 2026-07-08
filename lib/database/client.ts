@@ -9,20 +9,29 @@ let isUsingMockDatabase = true; // Default to mock mode
 export async function initializeDatabase() {
   console.log('🔧 Initializing database...');
 
-  // For Expo Go, always use mock mode
-  if (Platform.OS !== 'web') {
-    // Don't even try SQLite in this version - just use mock
-    console.log('📱 Running in Expo Go - using mock database');
+  if (Platform.OS === 'web') {
+    console.log('🌐 Web platform - using mock database');
     isUsingMockDatabase = true;
     db = null;
     return null;
   }
 
-  // Web fallback
-  console.log('🌐 Web platform - using mock database');
-  isUsingMockDatabase = true;
-  db = null;
-  return null;
+  // Native platform - try real SQLite
+  try {
+    const { openDatabaseSync } = require('expo-sqlite');
+    const { drizzle } = require('drizzle-orm/expo-sqlite');
+
+    const sqliteDb = openDatabaseSync('journal.db');
+    db = drizzle(sqliteDb, { schema });
+    isUsingMockDatabase = false;
+    console.log('✅ SQLite database initialized');
+    return db;
+  } catch (error) {
+    console.warn('⚠️ SQLite unavailable (Expo Go?), falling back to mock:', error);
+    isUsingMockDatabase = true;
+    db = null;
+    return null;
+  }
 }
 
 // Run migrations when SQLite is enabled
