@@ -166,13 +166,14 @@ export default function TodayScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardAvoidingView}
         >
-          {/* Demo Mode Warning - Always show since we're always in mock mode */}
-          <View style={styles.warningContainer}>
-            <AlertTriangle size={16} color="#F59E0B" />
-            <Text style={styles.warningText}>
-              🚀 Demo Mode: App is working! Data is temporary and won&apos;t persist between sessions. Use Expo Development Client for full functionality.
-            </Text>
-          </View>
+          {isUsingMock() && (
+            <View style={styles.warningContainer}>
+              <AlertTriangle size={16} color="#F59E0B" />
+              <Text style={styles.warningText}>
+                Demo mode — data won&apos;t persist. Use a development build for full functionality.
+              </Text>
+            </View>
+          )}
 
           <View style={styles.header}>
             <View style={styles.headerTop}>

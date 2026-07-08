@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import { History, Calendar, Download, Upload, Settings, FolderOpen, X, HardDrive, Share } from 'lucide-react-native';
 import { HistoryCard } from '@/components/molecules/HistoryCard';
 import { LoadingSpinner } from '@/components/atoms/LoadingSpinner';
@@ -14,6 +15,7 @@ import { Platform } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { calculateStreak, getTodayString } from '@/lib/utils/date';
 
 // Backup location options
 type BackupLocation = 'documents' | 'custom' | 'share';
@@ -25,6 +27,7 @@ interface BackupSettings {
 }
 
 export default function HistoryScreen() {
+  const router = useRouter();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [historyEntries, setHistoryEntries] = useState<JournalEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -404,7 +407,7 @@ export default function HistoryScreen() {
                     </View>
                     <View style={styles.statItem}>
                       <Text style={styles.statNumber}>
-                        {entries.length > 0 ? Math.floor((Date.now() - new Date(entries[entries.length - 1].date).getTime()) / (1000 * 60 * 60 * 24)) : 0}
+                        {calculateStreak(entries.map((entry) => entry.entry_date), getTodayString())}
                       </Text>
                       <Text style={styles.statLabel}>Day Streak</Text>
                     </View>
@@ -421,7 +424,7 @@ export default function HistoryScreen() {
                       <HistoryCard
                         key={entry.id}
                         entry={entry}
-                        onPress={() => console.log('Edit entry:', entry.id)}
+                        onPress={() => router.push(`/entry/${entry.entry_date}`)}
                       />
                     ))
                   )}
@@ -446,7 +449,7 @@ export default function HistoryScreen() {
                       <HistoryCard
                         key={entry.id}
                         entry={entry}
-                        onPress={() => console.log('View historical entry:', entry.id)}
+                        onPress={() => router.push(`/entry/${entry.entry_date}`)}
                       />
                     ))
                   )}

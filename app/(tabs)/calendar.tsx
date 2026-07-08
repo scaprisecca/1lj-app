@@ -68,13 +68,7 @@ export default function CalendarScreen() {
   const handleDateSelect = (date: string) => {
     setSelectedDate(date);
     const entry = entries.find(e => e.entry_date === date);
-
-    // Navigate to entry details if entry exists
-    if (entry) {
-      router.push(`/entry/${date}`);
-    } else {
-      setSelectedEntry(null);
-    }
+    setSelectedEntry(entry ?? null);
   };
 
   const handleCreateEntry = () => {
@@ -210,9 +204,9 @@ export default function CalendarScreen() {
               </Text>
               
               {selectedEntry ? (
-                <HistoryCard 
-                  entry={selectedEntry} 
-                  onPress={() => navigateToEntry(selectedEntry.date)}
+                <HistoryCard
+                  entry={selectedEntry}
+                  onPress={() => navigateToEntry(selectedEntry.entry_date)}
                   showDate={false}
                 />
               ) : (
