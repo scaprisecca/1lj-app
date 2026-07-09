@@ -30,6 +30,7 @@ import { DatabaseService } from '@/services/database';
 import { TaskManagerService } from '@/services/task-manager';
 import { useBackgroundTaskPermissions } from '@/hooks/useBackgroundTaskPermissions';
 import { useToast } from '@/components/atoms/Toast';
+import { LoadingSpinner } from '@/components/atoms/LoadingSpinner';
 import { colors, fonts, radii, shadows, spacing } from '@/lib/theme';
 
 export default function SettingsScreen() {
@@ -292,7 +293,9 @@ export default function SettingsScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <View style={styles.loadingContainer}>
+          <LoadingSpinner size={32} />
+        </View>
       </SafeAreaView>
     );
   }
@@ -346,6 +349,8 @@ export default function SettingsScreen() {
             style={styles.settingCard}
             onPress={handleBackupDestinationPicker}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Choose backup destination"
           >
             <View style={styles.settingRow}>
               <View style={styles.settingIconContainer}>
@@ -387,6 +392,9 @@ export default function SettingsScreen() {
                   onPress={() => handleAutoBackupFrequencyChange(frequency)}
                   activeOpacity={0.7}
                   disabled={isUpdatingFrequency}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Auto backup ${getBackupFrequencyLabel(frequency)}`}
+                  accessibilityState={{ selected: settings.autoBackupFrequency === frequency }}
                 >
                   {isUpdatingFrequency && settings.autoBackupFrequency !== frequency ? (
                     <ActivityIndicator size="small" color={colors.textMuted} />
@@ -434,6 +442,9 @@ export default function SettingsScreen() {
                   <TouchableOpacity
                     onPress={backgroundPermissions.requestPermission}
                     style={styles.statusButton}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Enable background tasks"
                   >
                     <Text style={styles.statusButtonText}>Enable</Text>
                   </TouchableOpacity>
@@ -448,6 +459,9 @@ export default function SettingsScreen() {
             onPress={handleExportNow}
             disabled={isExporting}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Export now"
+            accessibilityState={{ disabled: isExporting }}
           >
             <LinearGradient
               colors={isExporting ? [colors.textMuted, colors.textMuted] : colors.gradient}
@@ -472,6 +486,9 @@ export default function SettingsScreen() {
             onPress={handleRestore}
             disabled={isRestoring}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Restore from backup"
+            accessibilityState={{ disabled: isRestoring }}
           >
             <View style={styles.settingRow}>
               <View style={styles.settingIconContainer}>
@@ -509,6 +526,11 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollContent: {
     paddingBottom: spacing.xxxl,

@@ -21,6 +21,26 @@ export function formatDateString(
   return parseDateString(dateStr).toLocaleDateString('en-US', options);
 }
 
+/** Formats a "YYYY-MM-DD" string as a relative label ("Today", "Yesterday", "3 days ago", "1 week ago", ...). */
+export function formatRelativeDate(dateStr: string, today: string = getTodayString()): string {
+  const diffDays = Math.floor(
+    (parseDateString(today).getTime() - parseDateString(dateStr).getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+
+  const weeks = Math.floor(diffDays / 7);
+  if (diffDays < 30) return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
+
+  const months = Math.floor(diffDays / 30);
+  if (diffDays < 365) return months === 1 ? '1 month ago' : `${months} months ago`;
+
+  const years = Math.floor(diffDays / 365);
+  return years === 1 ? '1 year ago' : `${years} years ago`;
+}
+
 /**
  * Counts consecutive calendar days with an entry, walking back from today.
  * If there's no entry for today yet, counting starts from yesterday so a

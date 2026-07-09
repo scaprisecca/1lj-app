@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Calendar, Edit3 } from 'lucide-react-native';
 import type { JournalEntry } from '@/lib/database/schema';
-import { formatDateString, parseDateString } from '@/lib/utils/date';
+import { formatDateString, formatRelativeDate, getTodayString, parseDateString } from '@/lib/utils/date';
 import { htmlToPlainText } from '@/utils/html';
 import { colors, fonts, radii, shadows, spacing } from '@/lib/theme';
 
@@ -21,29 +21,32 @@ export function HistoryCard({ entry, onPress, showDate = true }: HistoryCardProp
     });
   };
   
-  const formatRelativeDate = (dateString: string) => {
-    const date = parseDateString(dateString);
-    const now = new Date();
-    const diffTime = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
-    return `${Math.floor(diffDays / 365)} years ago`;
+  const isRecent = (dateString: string) => {
+    const diffDays = Math.floor(
+      (parseDateString(getTodayString()).getTime() - parseDateString(dateString).getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return diffDays <= 1;
   };
 
+  const showAbsoluteDate = showDate && !isRecent(entry.entry_date);
+
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress} disabled={!onPress}>
+    <TouchableOpacity
+      style={styles.container}
+      onPress={onPress}
+      disabled={!onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`Entry for ${formatDate(entry.entry_date)}`}
+    >
       <View style={styles.header}>
         <View style={styles.dateContainer}>
           <Calendar size={16} color={colors.primary} />
-          {showDate && (
+          {showAbsoluteDate && (
             <Text style={styles.dateText}>{formatDate(entry.entry_date)}</Text>
           )}
-          <Text style={styles.relativeText}>({formatRelativeDate(entry.entry_date)})</Text>
+          <Text style={[styles.relativeText, !showAbsoluteDate && styles.relativeTextPrimary]}>
+            {showAbsoluteDate ? `(${formatRelativeDate(entry.entry_date)})` : formatRelativeDate(entry.entry_date)}
+          </Text>
         </View>
         {onPress && <Edit3 size={16} color={colors.textMuted} />}
       </View>
@@ -94,6 +97,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
     marginLeft: spacing.xs,
+  },
+  relativeTextPrimary: {
+    fontFamily: fonts.semiBold,
+    fontSize: 14,
+    color: colors.text,
+    marginLeft: spacing.sm,
   },
   contentContainer: {
     marginBottom: spacing.sm,

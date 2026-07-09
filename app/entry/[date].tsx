@@ -2,7 +2,8 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform }
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect, useRef } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Edit3, Save, AlertTriangle } from 'lucide-react-native';
+import { useNavigation, usePreventRemove } from '@react-navigation/native';
+import { ArrowLeft, Edit3, Save, Trash2 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { DatabaseService } from '@/services/database';
@@ -11,6 +12,7 @@ import { WidgetService } from '@/services/widget';
 import { RichTextEditor, type RichTextEditorRef } from '@/components/organisms/RichTextEditor';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useToast } from '@/components/atoms/Toast';
+import { LoadingSpinner } from '@/components/atoms/LoadingSpinner';
 import { SettingsService } from '@/services/settings';
 import RenderHtml from 'react-native-render-html';
 import { useWindowDimensions } from 'react-native';
@@ -22,6 +24,7 @@ import { colors, fonts, radii, shadows, spacing } from '@/lib/theme';
 export default function EntryDetailScreen() {
   const { date } = useLocalSearchParams<{ date: string }>();
   const router = useRouter();
+  const navigation = useNavigation();
   const { width } = useWindowDimensions();
   const richTextRef = useRef<RichTextEditorRef>(null);
 
@@ -180,43 +183,66 @@ export default function EntryDetailScreen() {
     });
   };
 
-  const handleBackPress = () => {
-    if (isEditMode) {
-      Alert.alert(
-        'Unsaved Changes',
-        'Do you want to save your changes before going back?',
-        [
-          {
-            text: 'Discard',
-            style: 'destructive',
-            onPress: () => {
-              setIsEditMode(false);
-              setEditedContent(entry?.html_body || '');
-              router.back();
-            }
-          },
-          {
-            text: 'Save',
-            onPress: async () => {
-              await saveNow();
-              router.back();
-            }
-          },
-          {
-            text: 'Cancel',
-            style: 'cancel'
+  usePreventRemove(isEditMode, ({ data }) => {
+    Alert.alert(
+      'Unsaved Changes',
+      'Do you want to save your changes before going back?',
+      [
+        {
+          text: 'Discard',
+          style: 'destructive',
+          onPress: () => {
+            setIsEditMode(false);
+            setEditedContent(entry?.html_body || '');
+            navigation.dispatch(data.action);
           }
-        ]
-      );
-    } else {
-      router.back();
-    }
+        },
+        {
+          text: 'Save',
+          onPress: async () => {
+            await saveNow();
+            setIsEditMode(false);
+            navigation.dispatch(data.action);
+          }
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        }
+      ]
+    );
+  });
+
+  const handleDeletePress = () => {
+    if (!entry) return;
+
+    Alert.alert(
+      'Delete Entry',
+      'Are you sure you want to delete this entry? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await DatabaseService.deleteEntry(entry.id);
+              router.back();
+            } catch (error) {
+              logError(error, 'EntryDetailScreen.handleDeletePress');
+              showErrorAlert(error, 'Delete Error');
+            }
+          }
+        }
+      ]
+    );
   };
 
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
+          <LoadingSpinner size={32} />
           <Text style={styles.loadingText}>Loading entry...</Text>
         </View>
       </SafeAreaView>
@@ -231,7 +257,13 @@ export default function EntryDetailScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
             <ArrowLeft size={24} color={colors.text} />
           </TouchableOpacity>
 
@@ -240,14 +272,37 @@ export default function EntryDetailScreen() {
           </View>
 
           {!isEditMode ? (
-            <TouchableOpacity onPress={handleEditPress} style={styles.editButton}>
-              <Edit3 size={20} color={colors.primary} />
-            </TouchableOpacity>
+            <View style={styles.headerActions}>
+              {entry && (
+                <TouchableOpacity
+                  onPress={handleDeletePress}
+                  style={styles.deleteButton}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Delete entry"
+                >
+                  <Trash2 size={20} color={colors.danger} />
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                onPress={handleEditPress}
+                style={styles.editButton}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel="Edit entry"
+              >
+                <Edit3 size={20} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
           ) : (
             <TouchableOpacity
               onPress={handleSaveAndExit}
               style={[styles.saveIconButton, isOverLimit && styles.saveIconButtonDisabled]}
               disabled={isSaving || isOverLimit}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel="Save and exit"
+              accessibilityState={{ disabled: isSaving || isOverLimit }}
             >
               <Save size={20} color={isOverLimit ? colors.textMuted : colors.success} />
             </TouchableOpacity>
@@ -297,6 +352,9 @@ export default function EntryDetailScreen() {
               style={[styles.saveButton, { opacity: editedContent.trim() ? 1 : 0.5 }]}
               onPress={handleManualSave}
               disabled={!editedContent.trim() || isSaving || isOverLimit}
+              accessibilityRole="button"
+              accessibilityLabel="Save changes"
+              accessibilityState={{ disabled: !editedContent.trim() || isSaving || isOverLimit }}
             >
               <LinearGradient
                 colors={colors.gradient}
@@ -360,6 +418,15 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: spacing.sm,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  deleteButton: {
+    padding: spacing.sm,
+    backgroundColor: colors.borderLight,
+    borderRadius: radii.md,
   },
   editButton: {
     padding: spacing.sm,

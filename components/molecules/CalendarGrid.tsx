@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { JournalEntry } from '@/lib/database/schema';
-import { getTodayString } from '@/lib/utils/date';
+import { formatDateString, getTodayString } from '@/lib/utils/date';
 import { colors, fonts, radii, shadows, spacing } from '@/lib/theme';
 
 interface CalendarGridProps {
@@ -14,7 +14,7 @@ interface CalendarGridProps {
 }
 
 export function CalendarGrid({ year, month, entries, selectedDate, onDateSelect }: CalendarGridProps) {
-  const screenWidth = Dimensions.get('window').width;
+  const { width: screenWidth } = useWindowDimensions();
   const cellSize = (screenWidth - 80) / 7; // 24px margin + 16px padding on each side
   
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -30,15 +30,24 @@ export function CalendarGrid({ year, month, entries, selectedDate, onDateSelect 
     const hasEntry = entryDates.has(date);
     const isSelected = date === selectedDate;
     const isToday = date === today;
-    
+    const label = [
+      formatDateString(date, { month: 'long', day: 'numeric' }),
+      isToday && 'today',
+      hasEntry && 'has entry',
+    ].filter(Boolean).join(', ');
+
     return (
       <TouchableOpacity
         key={day}
         style={[styles.dayCell, { width: cellSize, height: cellSize }]}
         onPress={() => onDateSelect(date)}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ selected: isSelected }}
       >
         <View style={[
           styles.dayContent,
+          hasEntry && styles.hasEntryContent,
           isToday && styles.todayContent,
           isSelected && styles.selectedContent,
         ]}>
@@ -54,6 +63,7 @@ export function CalendarGrid({ year, month, entries, selectedDate, onDateSelect 
             <>
               <Text style={[
                 styles.dayText,
+                hasEntry && styles.entryText,
                 isToday && styles.todayText,
               ]}>
                 {day}
@@ -129,8 +139,12 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     position: 'relative',
   },
+  hasEntryContent: {
+    backgroundColor: colors.indigoTint,
+  },
   todayContent: {
-    backgroundColor: colors.borderLight,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
   },
   selectedContent: {
     overflow: 'hidden',
@@ -147,6 +161,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text,
   },
+  entryText: {
+    color: colors.primary,
+    fontFamily: fonts.semiBold,
+  },
   todayText: {
     color: colors.primary,
     fontFamily: fonts.semiBold,
@@ -156,9 +174,9 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semiBold,
   },
   entryDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: colors.warning,
     position: 'absolute',
     bottom: 4,

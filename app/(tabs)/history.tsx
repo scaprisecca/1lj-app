@@ -7,6 +7,7 @@ import { History, Calendar, Search, X } from 'lucide-react-native';
 import { HistoryCard } from '@/components/molecules/HistoryCard';
 import { LoadingSpinner } from '@/components/atoms/LoadingSpinner';
 import { ErrorMessage } from '@/components/atoms/ErrorMessage';
+import { EmptyState } from '@/components/atoms/EmptyState';
 import { DatabaseService } from '@/services/database';
 import type { JournalEntry } from '@/lib/database/schema';
 import { calculateStreak, getTodayString, formatDateString } from '@/lib/utils/date';
@@ -120,6 +121,9 @@ export default function HistoryScreen() {
         <TouchableOpacity
           style={[styles.tab, activeTab === 'all' && styles.activeTab]}
           onPress={() => setActiveTab('all')}
+          accessibilityRole="button"
+          accessibilityLabel="All Entries"
+          accessibilityState={{ selected: activeTab === 'all' }}
         >
           <Calendar size={16} color={activeTab === 'all' ? colors.white : colors.primary} />
           <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
@@ -130,6 +134,9 @@ export default function HistoryScreen() {
         <TouchableOpacity
           style={[styles.tab, activeTab === 'history' && styles.activeTab]}
           onPress={() => setActiveTab('history')}
+          accessibilityRole="button"
+          accessibilityLabel="This Day"
+          accessibilityState={{ selected: activeTab === 'history' }}
         >
           <History size={16} color={activeTab === 'history' ? colors.white : colors.primary} />
           <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>
@@ -164,7 +171,12 @@ export default function HistoryScreen() {
               returnKeyType="search"
             />
             {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity
+                onPress={() => setSearchQuery('')}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel="Clear search"
+              >
                 <X size={18} color={colors.textMuted} />
               </TouchableOpacity>
             )}
@@ -186,24 +198,32 @@ export default function HistoryScreen() {
 
     if (activeTab === 'all' && debouncedQuery) {
       return (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No entries match &quot;{searchQuery.trim()}&quot;</Text>
-          <Text style={styles.emptySubtext}>Try a different search term</Text>
-        </View>
+        <EmptyState
+          icon={<Search size={28} color={colors.primary} />}
+          title={`No entries match "${searchQuery.trim()}"`}
+          subtitle="Try a different search term"
+        />
+      );
+    }
+
+    if (activeTab === 'all') {
+      return (
+        <EmptyState
+          icon={<Calendar size={28} color={colors.primary} />}
+          title="No journal entries yet"
+          subtitle="Start writing to see your entries here"
+          actionLabel="Write today's entry"
+          onAction={() => router.push('/')}
+        />
       );
     }
 
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>
-          {activeTab === 'all' ? 'No journal entries yet' : 'No history for this date'}
-        </Text>
-        <Text style={styles.emptySubtext}>
-          {activeTab === 'all'
-            ? 'Start writing to see your entries here'
-            : 'Check back after writing more entries'}
-        </Text>
-      </View>
+      <EmptyState
+        icon={<History size={28} color={colors.primary} />}
+        title="No history for this date"
+        subtitle="Check back after writing more entries"
+      />
     );
   };
 
@@ -372,22 +392,5 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     fontSize: 14,
     color: colors.textSecondary,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: spacing.huge,
-    paddingHorizontal: spacing.xxl,
-  },
-  emptyText: {
-    fontFamily: fonts.medium,
-    fontSize: 16,
-    color: colors.textMuted,
-    marginBottom: spacing.sm,
-  },
-  emptySubtext: {
-    fontFamily: fonts.regular,
-    fontSize: 14,
-    color: colors.disabled,
-    textAlign: 'center',
   },
 });

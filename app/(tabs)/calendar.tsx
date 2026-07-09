@@ -8,6 +8,7 @@ import { CalendarGrid } from '@/components/molecules/CalendarGrid';
 import { HistoryCard } from '@/components/molecules/HistoryCard';
 import { LoadingSpinner } from '@/components/atoms/LoadingSpinner';
 import { ErrorMessage } from '@/components/atoms/ErrorMessage';
+import { EmptyState } from '@/components/atoms/EmptyState';
 import { DatabaseService } from '@/services/database';
 import type { JournalEntry } from '@/lib/database/schema';
 import { formatDateString } from '@/lib/utils/date';
@@ -149,6 +150,9 @@ export default function CalendarScreen() {
       <TouchableOpacity
         style={[styles.yearItem, isCurrentYear && styles.yearItemSelected]}
         onPress={() => handleYearSelect(year)}
+        accessibilityRole="button"
+        accessibilityLabel={`${year}`}
+        accessibilityState={{ selected: isCurrentYear }}
       >
         <Text style={[styles.yearText, isCurrentYear && styles.yearTextSelected]}>
           {year}
@@ -184,6 +188,9 @@ export default function CalendarScreen() {
             <TouchableOpacity
               style={styles.navButton}
               onPress={() => navigateMonth('prev')}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel="Previous month"
             >
               <ChevronLeft size={24} color={colors.primary} />
             </TouchableOpacity>
@@ -192,6 +199,8 @@ export default function CalendarScreen() {
             <TouchableOpacity
               style={styles.monthTextContainer}
               onPress={() => setShowYearPicker(true)}
+              accessibilityRole="button"
+              accessibilityLabel={`${formatMonthYear(currentDate)}, choose month or year`}
             >
               <Text style={styles.monthText}>{formatMonthYear(currentDate)}</Text>
               <ChevronDown size={20} color={colors.primary} style={styles.dropdownIcon} />
@@ -200,6 +209,9 @@ export default function CalendarScreen() {
             <TouchableOpacity
               style={styles.navButton}
               onPress={() => navigateMonth('next')}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel="Next month"
             >
               <ChevronRight size={24} color={colors.primary} />
             </TouchableOpacity>
@@ -212,6 +224,8 @@ export default function CalendarScreen() {
             disabled={isCurrentMonth()}
             accessibilityElementsHidden={isCurrentMonth()}
             importantForAccessibility={isCurrentMonth() ? 'no-hide-descendants' : 'yes'}
+            accessibilityRole="button"
+            accessibilityLabel="Go to today"
           >
             <CalendarCheck size={14} color={colors.primary} />
             <Text style={styles.todayButtonText}>Today</Text>
@@ -254,21 +268,12 @@ export default function CalendarScreen() {
                   showDate={false}
                 />
               ) : (
-                <View style={styles.noEntryContainer}>
-                  <Text style={styles.noEntryText}>No entry for this date</Text>
-                  <TouchableOpacity
-                    style={styles.createButton}
-                    onPress={handleCreateEntry}
-                  >
-                    <LinearGradient
-                      colors={colors.gradient}
-                      style={styles.createButtonGradient}
-                    >
-                      <Plus size={16} color={colors.white} />
-                      <Text style={styles.createButtonText}>Create Entry</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                </View>
+                <EmptyState
+                  icon={<Plus size={28} color={colors.primary} />}
+                  title="No entry for this date"
+                  actionLabel="Create Entry"
+                  onAction={handleCreateEntry}
+                />
               )}
             </View>
           )}
@@ -303,6 +308,9 @@ export default function CalendarScreen() {
                 <TouchableOpacity
                   style={styles.closeButton}
                   onPress={() => setShowYearPicker(false)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Close"
                 >
                   <X size={24} color={colors.textSecondary} />
                 </TouchableOpacity>
@@ -317,6 +325,9 @@ export default function CalendarScreen() {
                       key={label}
                       style={[styles.monthGridItem, isCurrentSelection && styles.monthGridItemSelected]}
                       onPress={() => handleMonthSelect(index)}
+                      accessibilityRole="button"
+                      accessibilityLabel={label}
+                      accessibilityState={{ selected: isCurrentSelection }}
                     >
                       <Text
                         style={[
@@ -450,33 +461,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.lg,
     paddingHorizontal: spacing.xxl,
-  },
-  noEntryContainer: {
-    alignItems: 'center',
-    paddingVertical: spacing.xxxl,
-    paddingHorizontal: spacing.xxl,
-  },
-  noEntryText: {
-    fontFamily: fonts.regular,
-    fontSize: 16,
-    color: colors.textMuted,
-    marginBottom: spacing.lg,
-  },
-  createButton: {
-    borderRadius: radii.md,
-    overflow: 'hidden',
-  },
-  createButtonGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-  },
-  createButtonText: {
-    fontFamily: fonts.semiBold,
-    fontSize: 14,
-    color: colors.white,
-    marginLeft: spacing.sm,
   },
   statsContainer: {
     backgroundColor: colors.surface,

@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, ActivityIndicator, KeyboardAvoidingView, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, Platform, ActivityIndicator, KeyboardAvoidingView, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'expo-router';
@@ -14,6 +14,7 @@ import { RichTextEditor, type RichTextEditorRef } from '@/components/organisms/R
 import { RichToolbar, actions, RichEditor } from 'react-native-pell-rich-editor';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useToast } from '@/components/atoms/Toast';
+import { LoadingSpinner } from '@/components/atoms/LoadingSpinner';
 import { SettingsService } from '@/services/settings';
 import type { JournalEntry } from '@/lib/database/schema';
 import { getTodayString, formatDateString } from '@/lib/utils/date';
@@ -32,12 +33,22 @@ export default function TodayScreen() {
   const richTextRef = useRef<RichTextEditorRef>(null);
   const externalEditorRef = useRef<RichEditor>(null);
   const savedBodyRef = useRef<string>('');
+  const motivationOpacity = useRef(new Animated.Value(1)).current;
   const { showToast } = useToast();
   const router = useRouter();
   const { width } = useWindowDimensions();
 
   const today = getTodayString();
   const isOverLimit = characterLimit !== undefined && characterCount > characterLimit;
+  const isEmpty = !entry.trim();
+
+  useEffect(() => {
+    Animated.timing(motivationOpacity, {
+      toValue: isEmpty ? 1 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [isEmpty, motivationOpacity]);
 
   useEffect(() => {
     loadTodayEntry();
@@ -163,7 +174,7 @@ export default function TodayScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <LoadingSpinner size={32} />
           <Text style={styles.loadingText}>Loading your entry...</Text>
         </View>
       </SafeAreaView>
@@ -198,6 +209,8 @@ export default function TodayScreen() {
                   <TouchableOpacity
                     style={styles.saveStatusContainer}
                     onPress={handleManualSave}
+                    accessibilityRole="button"
+                    accessibilityLabel="Save failed, tap to retry"
                   >
                     <AlertTriangle size={14} color={colors.danger} />
                     <Text style={styles.saveStatusTextError}>
@@ -235,6 +248,8 @@ export default function TodayScreen() {
               style={styles.previewContainer}
               onPress={() => router.push(`/entry/${today}`)}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="View full entry for today"
             >
               <View style={styles.previewHeader}>
                 <Text style={styles.previewLabel}>Today so far</Text>
@@ -307,12 +322,15 @@ export default function TodayScreen() {
               </Text>
             )}
             <TouchableOpacity
-              style={[styles.saveButton, { opacity: entry.trim() ? 1 : 0.5 }]}
+              style={styles.saveButton}
               onPress={handleManualSave}
-              disabled={!entry.trim() || isSaving || isOverLimit}
+              disabled={isEmpty || isSaving || isOverLimit}
+              accessibilityRole="button"
+              accessibilityLabel="Save entry"
+              accessibilityState={{ disabled: isEmpty || isSaving || isOverLimit }}
             >
               <LinearGradient
-                colors={colors.gradient}
+                colors={isEmpty ? [colors.disabled, colors.disabled] : colors.gradient}
                 style={styles.saveButtonGradient}
               >
                 <Save size={20} color={colors.white} />
@@ -322,14 +340,12 @@ export default function TodayScreen() {
               </LinearGradient>
             </TouchableOpacity>
 
-            {!entry.trim() && (
-              <View style={styles.motivationContainer}>
-                <Heart size={16} color={colors.warning} />
-                <Text style={styles.motivationText}>
-                  Every day is a new page in your story
-                </Text>
-              </View>
-            )}
+            <Animated.View style={[styles.motivationContainer, { opacity: motivationOpacity }]}>
+              <Heart size={16} color={colors.warning} />
+              <Text style={styles.motivationText}>
+                Every day is a new page in your story
+              </Text>
+            </Animated.View>
           </View>
         </KeyboardAvoidingView>
       </LinearGradient>

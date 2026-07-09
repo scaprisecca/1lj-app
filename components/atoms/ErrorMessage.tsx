@@ -15,7 +15,12 @@ export function ErrorMessage({ message, onRetry, showRetry = true }: ErrorMessag
       <AlertCircle size={48} color={colors.danger} style={styles.icon} />
       <Text style={styles.message}>{message}</Text>
       {showRetry && onRetry && (
-        <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={onRetry}
+          accessibilityRole="button"
+          accessibilityLabel="Try again"
+        >
           <RefreshCw size={16} color={colors.primary} />
           <Text style={styles.retryText}>Try Again</Text>
         </TouchableOpacity>
