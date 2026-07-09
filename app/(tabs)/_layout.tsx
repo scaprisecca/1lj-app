@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
 import { Edit3, Calendar, Clock, Settings } from 'lucide-react-native';
+import { colors, fonts, spacing } from '@/lib/theme';
 
 export default function TabLayout() {
   return (
@@ -8,19 +9,19 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: colors.white,
           borderTopWidth: 1,
-          borderTopColor: '#F1F5F9',
-          paddingTop: 8,
-          paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+          borderTopColor: colors.borderLight,
+          paddingTop: spacing.sm,
+          paddingBottom: Platform.OS === 'ios' ? 20 : spacing.sm,
           height: Platform.OS === 'ios' ? 88 : 64,
         },
-        tabBarActiveTintColor: '#6366F1',
-        tabBarInactiveTintColor: '#64748B',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarLabelStyle: {
-          fontFamily: 'Inter-Medium',
+          fontFamily: fonts.medium,
           fontSize: 12,
-          marginTop: 4,
+          marginTop: spacing.xs,
         },
       }}
     >

@@ -11,6 +11,7 @@ import { ErrorMessage } from '@/components/atoms/ErrorMessage';
 import { DatabaseService } from '@/services/database';
 import type { JournalEntry } from '@/lib/database/schema';
 import { formatDateString } from '@/lib/utils/date';
+import { colors, fonts, radii, shadows, spacing } from '@/lib/theme';
 
 const MONTH_LABELS = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -170,7 +171,7 @@ export default function CalendarScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient colors={['#F8FAFC', '#F1F5F9']} style={styles.gradient}>
+      <LinearGradient colors={colors.backgroundGradient} style={styles.gradient}>
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
@@ -184,23 +185,23 @@ export default function CalendarScreen() {
               style={styles.navButton}
               onPress={() => navigateMonth('prev')}
             >
-              <ChevronLeft size={24} color="#6366F1" />
+              <ChevronLeft size={24} color={colors.primary} />
             </TouchableOpacity>
-            
+
             {/* Make month/year text clickable */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.monthTextContainer}
               onPress={() => setShowYearPicker(true)}
             >
               <Text style={styles.monthText}>{formatMonthYear(currentDate)}</Text>
-              <ChevronDown size={20} color="#6366F1" style={styles.dropdownIcon} />
+              <ChevronDown size={20} color={colors.primary} style={styles.dropdownIcon} />
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={styles.navButton}
               onPress={() => navigateMonth('next')}
             >
-              <ChevronRight size={24} color="#6366F1" />
+              <ChevronRight size={24} color={colors.primary} />
             </TouchableOpacity>
           </View>
 
@@ -212,7 +213,7 @@ export default function CalendarScreen() {
             accessibilityElementsHidden={isCurrentMonth()}
             importantForAccessibility={isCurrentMonth() ? 'no-hide-descendants' : 'yes'}
           >
-            <CalendarCheck size={14} color="#6366F1" />
+            <CalendarCheck size={14} color={colors.primary} />
             <Text style={styles.todayButtonText}>Today</Text>
           </TouchableOpacity>
 
@@ -260,10 +261,10 @@ export default function CalendarScreen() {
                     onPress={handleCreateEntry}
                   >
                     <LinearGradient
-                      colors={['#6366F1', '#8B5CF6']}
+                      colors={colors.gradient}
                       style={styles.createButtonGradient}
                     >
-                      <Plus size={16} color="white" />
+                      <Plus size={16} color={colors.white} />
                       <Text style={styles.createButtonText}>Create Entry</Text>
                     </LinearGradient>
                   </TouchableOpacity>
@@ -303,7 +304,7 @@ export default function CalendarScreen() {
                   style={styles.closeButton}
                   onPress={() => setShowYearPicker(false)}
                 >
-                  <X size={24} color="#64748B" />
+                  <X size={24} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
 
@@ -349,7 +350,7 @@ export default function CalendarScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
   gradient: {
     flex: 1,
@@ -358,154 +359,138 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 24,
+    paddingHorizontal: spacing.xxl,
+    paddingTop: spacing.xxxl,
+    paddingBottom: spacing.xxl,
   },
   title: {
-    fontFamily: 'Inter-Bold',
+    fontFamily: fonts.bold,
     fontSize: 28,
-    color: '#1E293B',
-    marginBottom: 8,
+    color: colors.text,
+    marginBottom: spacing.sm,
   },
   subtitle: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: fonts.regular,
     fontSize: 16,
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   monthNav: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    marginBottom: 24,
+    paddingHorizontal: spacing.xxl,
+    marginBottom: spacing.xxl,
   },
   navButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: 'white',
+    borderRadius: radii.xxl + 2,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    ...shadows.button,
   },
   // Updated: Make month text container clickable
   monthTextContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: 'white',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.md,
+    backgroundColor: colors.surface,
+    ...shadows.button,
   },
   monthText: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: fonts.semiBold,
     fontSize: 18,
-    color: '#1E293B',
+    color: colors.text,
   },
   // New: Dropdown icon for year picker
   dropdownIcon: {
-    marginLeft: 8,
+    marginLeft: spacing.sm,
   },
   todayButton: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'center',
-    backgroundColor: 'white',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#6366F1',
-    borderRadius: 20,
+    borderColor: colors.primary,
+    borderRadius: radii.xxl,
     paddingVertical: 6,
     paddingHorizontal: 14,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
     gap: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 1,
+    ...shadows.low,
   },
   todayButtonHidden: {
     opacity: 0,
   },
   todayButtonText: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: fonts.semiBold,
     fontSize: 13,
-    color: '#6366F1',
+    color: colors.primary,
   },
   loadingContainer: {
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: spacing.huge,
   },
   loadingText: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: fonts.medium,
     fontSize: 14,
-    color: '#64748B',
-    marginTop: 12,
+    color: colors.textSecondary,
+    marginTop: spacing.md,
   },
   selectedDateContainer: {
-    paddingVertical: 24,
+    paddingVertical: spacing.xxl,
   },
   selectedDateTitle: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: fonts.semiBold,
     fontSize: 18,
-    color: '#1E293B',
-    marginBottom: 16,
-    paddingHorizontal: 24,
+    color: colors.text,
+    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.xxl,
   },
   noEntryContainer: {
     alignItems: 'center',
-    paddingVertical: 32,
-    paddingHorizontal: 24,
+    paddingVertical: spacing.xxxl,
+    paddingHorizontal: spacing.xxl,
   },
   noEntryText: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: fonts.regular,
     fontSize: 16,
-    color: '#94A3B8',
-    marginBottom: 16,
+    color: colors.textMuted,
+    marginBottom: spacing.lg,
   },
   createButton: {
-    borderRadius: 8,
+    borderRadius: radii.md,
     overflow: 'hidden',
   },
   createButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
   },
   createButtonText: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: fonts.semiBold,
     fontSize: 14,
-    color: 'white',
-    marginLeft: 8,
+    color: colors.white,
+    marginLeft: spacing.sm,
   },
   statsContainer: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-    marginHorizontal: 24,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: colors.surface,
+    borderRadius: radii.xl,
+    padding: spacing.xl,
+    marginHorizontal: spacing.xxl,
+    marginBottom: spacing.xxl,
+    ...shadows.card,
   },
   statsTitle: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: fonts.semiBold,
     fontSize: 16,
-    color: '#1E293B',
-    marginBottom: 16,
+    color: colors.text,
+    marginBottom: spacing.lg,
   },
   statsRow: {
     flexDirection: 'row',
@@ -515,15 +500,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statNumber: {
-    fontFamily: 'Inter-Bold',
+    fontFamily: fonts.bold,
     fontSize: 24,
-    color: '#6366F1',
+    color: colors.primary,
   },
   statLabel: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: fonts.regular,
     fontSize: 12,
-    color: '#64748B',
-    marginTop: 4,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
   },
   // New: Year picker modal styles
   modalOverlay: {
@@ -533,46 +518,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderRadius: radii.xl,
     width: '85%',
     maxHeight: '80%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 10,
+    ...shadows.modal,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    padding: spacing.xl,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: colors.borderLight,
   },
   modalTitle: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: fonts.semiBold,
     fontSize: 18,
-    color: '#1E293B',
+    color: colors.text,
   },
   closeButton: {
-    padding: 4,
+    padding: spacing.xs,
   },
   modalSectionLabel: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: fonts.semiBold,
     fontSize: 13,
-    color: '#94A3B8',
+    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 8,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.sm,
   },
   monthGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.md,
   },
   monthGridItem: {
     width: '25%',
@@ -581,38 +562,38 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   monthGridItemSelected: {
-    backgroundColor: '#EEF2FF',
-    borderRadius: 8,
+    backgroundColor: colors.indigoTint,
+    borderRadius: radii.md,
   },
   monthGridItemText: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: fonts.medium,
     fontSize: 14,
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   monthGridItemTextSelected: {
-    fontFamily: 'Inter-SemiBold',
-    color: '#6366F1',
+    fontFamily: fonts.semiBold,
+    color: colors.primary,
   },
   yearList: {
     maxHeight: 300,
   },
   yearItem: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xl,
     borderBottomWidth: 1,
-    borderBottomColor: '#F8FAFC',
+    borderBottomColor: colors.background,
   },
   yearItemSelected: {
-    backgroundColor: '#F0F7FF',
+    backgroundColor: colors.blueTint,
   },
   yearText: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: fonts.medium,
     fontSize: 16,
-    color: '#64748B',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   yearTextSelected: {
-    fontFamily: 'Inter-SemiBold',
-    color: '#6366F1',
+    fontFamily: fonts.semiBold,
+    color: colors.primary,
   },
 });

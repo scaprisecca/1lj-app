@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { AlertCircle, RefreshCw } from 'lucide-react-native';
+import { colors, fonts, radii, spacing } from '@/lib/theme';
 
 interface ErrorMessageProps {
   message: string;
@@ -11,11 +12,11 @@ interface ErrorMessageProps {
 export function ErrorMessage({ message, onRetry, showRetry = true }: ErrorMessageProps) {
   return (
     <View style={styles.container}>
-      <AlertCircle size={48} color="#EF4444" style={styles.icon} />
+      <AlertCircle size={48} color={colors.danger} style={styles.icon} />
       <Text style={styles.message}>{message}</Text>
       {showRetry && onRetry && (
         <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
-          <RefreshCw size={16} color="#6366F1" />
+          <RefreshCw size={16} color={colors.primary} />
           <Text style={styles.retryText}>Try Again</Text>
         </TouchableOpacity>
       )}
@@ -28,32 +29,32 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: spacing.xxl,
   },
   icon: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   message: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: fonts.medium,
     fontSize: 16,
-    color: '#64748B',
+    color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: spacing.xxl,
     lineHeight: 24,
   },
   retryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: '#6366F1',
+    borderColor: colors.primary,
   },
   retryText: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: fonts.medium,
     fontSize: 14,
-    color: '#6366F1',
-    marginLeft: 8,
+    color: colors.primary,
+    marginLeft: spacing.sm,
   },
 });

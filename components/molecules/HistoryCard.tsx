@@ -4,6 +4,7 @@ import { Calendar, Edit3 } from 'lucide-react-native';
 import type { JournalEntry } from '@/lib/database/schema';
 import { formatDateString, parseDateString } from '@/lib/utils/date';
 import { htmlToPlainText } from '@/utils/html';
+import { colors, fonts, radii, shadows, spacing } from '@/lib/theme';
 
 interface HistoryCardProps {
   entry: JournalEntry;
@@ -38,13 +39,13 @@ export function HistoryCard({ entry, onPress, showDate = true }: HistoryCardProp
     <TouchableOpacity style={styles.container} onPress={onPress} disabled={!onPress}>
       <View style={styles.header}>
         <View style={styles.dateContainer}>
-          <Calendar size={16} color="#6366F1" />
+          <Calendar size={16} color={colors.primary} />
           {showDate && (
             <Text style={styles.dateText}>{formatDate(entry.entry_date)}</Text>
           )}
           <Text style={styles.relativeText}>({formatRelativeDate(entry.entry_date)})</Text>
         </View>
-        {onPress && <Edit3 size={16} color="#94A3B8" />}
+        {onPress && <Edit3 size={16} color={colors.textMuted} />}
       </View>
       
       <View style={styles.contentContainer}>
@@ -64,22 +65,18 @@ export function HistoryCard({ entry, onPress, showDate = true }: HistoryCardProp
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginHorizontal: 24,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    marginHorizontal: spacing.xxl,
+    marginBottom: spacing.md,
+    ...shadows.subtle,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   dateContainer: {
     flexDirection: 'row',
@@ -87,31 +84,31 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dateText: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: fonts.semiBold,
     fontSize: 14,
-    color: '#1E293B',
-    marginLeft: 8,
+    color: colors.text,
+    marginLeft: spacing.sm,
   },
   relativeText: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: fonts.regular,
     fontSize: 12,
-    color: '#94A3B8',
-    marginLeft: 4,
+    color: colors.textMuted,
+    marginLeft: spacing.xs,
   },
   contentContainer: {
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   previewText: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: fonts.regular,
     fontSize: 15,
     lineHeight: 22,
-    color: '#334155',
+    color: colors.textBody,
   },
   updatedText: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: fonts.regular,
     fontSize: 11,
-    color: '#94A3B8',
-    marginTop: 8,
+    color: colors.textMuted,
+    marginTop: spacing.sm,
     fontStyle: 'italic',
   },
 });

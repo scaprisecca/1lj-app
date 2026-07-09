@@ -17,6 +17,7 @@ import { useWindowDimensions } from 'react-native';
 import { showErrorAlert, logError } from '@/utils/errorHandling';
 import type { JournalEntry } from '@/lib/database/schema';
 import { formatDateString } from '@/lib/utils/date';
+import { colors, fonts, radii, shadows, spacing } from '@/lib/theme';
 
 export default function EntryDetailScreen() {
   const { date } = useLocalSearchParams<{ date: string }>();
@@ -225,13 +226,13 @@ export default function EntryDetailScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
-        colors={['#F8FAFC', '#F1F5F9']}
+        colors={colors.backgroundGradient}
         style={styles.gradient}
       >
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-            <ArrowLeft size={24} color="#1E293B" />
+            <ArrowLeft size={24} color={colors.text} />
           </TouchableOpacity>
 
           <View style={styles.headerCenter}>
@@ -240,7 +241,7 @@ export default function EntryDetailScreen() {
 
           {!isEditMode ? (
             <TouchableOpacity onPress={handleEditPress} style={styles.editButton}>
-              <Edit3 size={20} color="#6366F1" />
+              <Edit3 size={20} color={colors.primary} />
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
@@ -248,7 +249,7 @@ export default function EntryDetailScreen() {
               style={[styles.saveIconButton, isOverLimit && styles.saveIconButtonDisabled]}
               disabled={isSaving || isOverLimit}
             >
-              <Save size={20} color={isOverLimit ? '#94A3B8' : '#10B981'} />
+              <Save size={20} color={isOverLimit ? colors.textMuted : colors.success} />
             </TouchableOpacity>
           )}
         </View>
@@ -298,10 +299,10 @@ export default function EntryDetailScreen() {
               disabled={!editedContent.trim() || isSaving || isOverLimit}
             >
               <LinearGradient
-                colors={['#6366F1', '#8B5CF6']}
+                colors={colors.gradient}
                 style={styles.saveButtonGradient}
               >
-                <Save size={20} color="white" />
+                <Save size={20} color={colors.white} />
                 <Text style={styles.saveButtonText}>
                   {isSaving ? 'Saving...' : 'Save Changes'}
                 </Text>
@@ -317,7 +318,7 @@ export default function EntryDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
   gradient: {
     flex: 1,
@@ -328,122 +329,114 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: fonts.medium,
     fontSize: 16,
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: spacing.xxxl,
   },
   emptyText: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: fonts.medium,
     fontSize: 16,
-    color: '#64748B',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 16,
+    paddingHorizontal: spacing.xxl,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   headerCenter: {
     flex: 1,
     alignItems: 'center',
-    marginHorizontal: 16,
+    marginHorizontal: spacing.lg,
   },
   backButton: {
-    padding: 8,
+    padding: spacing.sm,
   },
   editButton: {
-    padding: 8,
-    backgroundColor: '#EEF2FF',
-    borderRadius: 8,
+    padding: spacing.sm,
+    backgroundColor: colors.indigoTint,
+    borderRadius: radii.md,
   },
   saveIconButton: {
-    padding: 8,
-    backgroundColor: '#D1FAE5',
-    borderRadius: 8,
+    padding: spacing.sm,
+    backgroundColor: colors.successTint,
+    borderRadius: radii.md,
   },
   saveIconButtonDisabled: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.borderLight,
   },
   dateText: {
-    fontFamily: 'Inter-Bold',
+    fontFamily: fonts.bold,
     fontSize: 18,
-    color: '#1E293B',
+    color: colors.text,
     textAlign: 'center',
   },
   contentContainer: {
     flex: 1,
   },
   contentScrollView: {
-    paddingHorizontal: 24,
-    paddingBottom: 32,
+    paddingHorizontal: spacing.xxl,
+    paddingBottom: spacing.xxxl,
   },
   contentCard: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: colors.surface,
+    borderRadius: radii.xl,
+    padding: spacing.xxl,
+    ...shadows.card,
   },
   htmlContent: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: fonts.regular,
     fontSize: 16,
     lineHeight: 24,
-    color: '#1E293B',
+    color: colors.text,
   },
   editorContainer: {
     flex: 1,
-    marginHorizontal: 24,
-    marginBottom: 16,
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    marginHorizontal: spacing.xxl,
+    marginBottom: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radii.xl,
+    padding: spacing.xl,
+    ...shadows.card,
   },
   richTextEditor: {
     flex: 1,
   },
   bottomContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: 32,
+    paddingHorizontal: spacing.xxl,
+    paddingBottom: spacing.xxxl,
   },
   saveButton: {
-    borderRadius: 12,
+    borderRadius: radii.lg,
     overflow: 'hidden',
   },
   saveButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xxl,
   },
   saveButtonText: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: fonts.semiBold,
     fontSize: 16,
-    color: 'white',
-    marginLeft: 8,
+    color: colors.white,
+    marginLeft: spacing.sm,
   },
   overLimitText: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: fonts.medium,
     fontSize: 13,
-    color: '#EF4444',
+    color: colors.danger,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
 });

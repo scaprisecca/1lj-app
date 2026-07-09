@@ -30,6 +30,7 @@ import { DatabaseService } from '@/services/database';
 import { TaskManagerService } from '@/services/task-manager';
 import { useBackgroundTaskPermissions } from '@/hooks/useBackgroundTaskPermissions';
 import { useToast } from '@/components/atoms/Toast';
+import { colors, fonts, radii, shadows, spacing } from '@/lib/theme';
 
 export default function SettingsScreen() {
   const [settings, setSettings] = useState<AppSettings>({
@@ -291,7 +292,7 @@ export default function SettingsScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color="#6366F1" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -312,7 +313,7 @@ export default function SettingsScreen() {
           <View style={styles.settingCard}>
             <View style={styles.settingRow}>
               <View style={styles.settingIconContainer}>
-                <Type size={20} color="#6366F1" />
+                <Type size={20} color={colors.primary} />
               </View>
               <View style={styles.settingContent}>
                 <Text style={styles.settingLabel}>Character Limit</Text>
@@ -331,7 +332,7 @@ export default function SettingsScreen() {
                 maxLength={5}
                 editable={!isSaving}
               />
-              {isSaving && <ActivityIndicator size="small" color="#6366F1" />}
+              {isSaving && <ActivityIndicator size="small" color={colors.primary} />}
             </View>
           </View>
         </View>
@@ -348,7 +349,7 @@ export default function SettingsScreen() {
           >
             <View style={styles.settingRow}>
               <View style={styles.settingIconContainer}>
-                <FolderOpen size={20} color="#6366F1" />
+                <FolderOpen size={20} color={colors.primary} />
               </View>
               <View style={styles.settingContent}>
                 <Text style={styles.settingLabel}>Backup Destination</Text>
@@ -356,7 +357,7 @@ export default function SettingsScreen() {
                   {settings.backupDestination || 'Default location'}
                 </Text>
               </View>
-              <ChevronRight size={20} color="#94A3B8" />
+              <ChevronRight size={20} color={colors.textMuted} />
             </View>
           </TouchableOpacity>
 
@@ -364,7 +365,7 @@ export default function SettingsScreen() {
           <View style={styles.settingCard}>
             <View style={styles.settingRow}>
               <View style={styles.settingIconContainer}>
-                <Clock size={20} color="#6366F1" />
+                <Clock size={20} color={colors.primary} />
               </View>
               <View style={styles.settingContent}>
                 <Text style={styles.settingLabel}>Auto Backup</Text>
@@ -388,7 +389,7 @@ export default function SettingsScreen() {
                   disabled={isUpdatingFrequency}
                 >
                   {isUpdatingFrequency && settings.autoBackupFrequency !== frequency ? (
-                    <ActivityIndicator size="small" color="#94A3B8" />
+                    <ActivityIndicator size="small" color={colors.textMuted} />
                   ) : (
                     <>
                       <Text
@@ -401,7 +402,7 @@ export default function SettingsScreen() {
                         {getBackupFrequencyLabel(frequency)}
                       </Text>
                       {settings.autoBackupFrequency === frequency && (
-                        <Check size={16} color="#FFFFFF" />
+                        <Check size={16} color={colors.white} />
                       )}
                     </>
                   )}
@@ -449,15 +450,15 @@ export default function SettingsScreen() {
             activeOpacity={0.7}
           >
             <LinearGradient
-              colors={isExporting ? ['#94A3B8', '#94A3B8'] : ['#6366F1', '#8B5CF6']}
+              colors={isExporting ? [colors.textMuted, colors.textMuted] : colors.gradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.exportButtonGradient}
             >
               {isExporting ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
+                <ActivityIndicator size="small" color={colors.white} />
               ) : (
-                <Download size={20} color="#FFFFFF" />
+                <Download size={20} color={colors.white} />
               )}
               <Text style={styles.exportButtonText}>
                 {isExporting ? 'Exporting...' : 'Export Now'}
@@ -474,7 +475,7 @@ export default function SettingsScreen() {
           >
             <View style={styles.settingRow}>
               <View style={styles.settingIconContainer}>
-                <Upload size={20} color="#6366F1" />
+                <Upload size={20} color={colors.primary} />
               </View>
               <View style={styles.settingContent}>
                 <Text style={styles.settingLabel}>Restore from Backup</Text>
@@ -483,9 +484,9 @@ export default function SettingsScreen() {
                 </Text>
               </View>
               {isRestoring ? (
-                <ActivityIndicator size="small" color="#6366F1" />
+                <ActivityIndicator size="small" color={colors.primary} />
               ) : (
-                <ChevronRight size={20} color="#94A3B8" />
+                <ChevronRight size={20} color={colors.textMuted} />
               )}
             </View>
           </TouchableOpacity>
@@ -504,51 +505,47 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 32,
+    paddingBottom: spacing.xxxl,
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 24,
+    paddingHorizontal: spacing.xxl,
+    paddingTop: spacing.xxxl,
+    paddingBottom: spacing.xxl,
   },
   headerTitle: {
     fontSize: 28,
-    fontFamily: 'Inter-Bold',
-    color: '#1E293B',
-    marginBottom: 8,
+    fontFamily: fonts.bold,
+    color: colors.text,
+    marginBottom: spacing.sm,
   },
   headerSubtitle: {
     fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: '#64748B',
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
   },
   section: {
-    marginBottom: 24,
-    paddingHorizontal: 16,
+    marginBottom: spacing.xxl,
+    paddingHorizontal: spacing.lg,
   },
   sectionTitle: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: '#1E293B',
-    marginBottom: 12,
-    paddingHorizontal: 4,
+    fontFamily: fonts.semiBold,
+    color: colors.text,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.xs,
   },
   settingCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    ...shadows.compact,
   },
   settingCardDisabled: {
     opacity: 0.6,
@@ -560,48 +557,48 @@ const styles = StyleSheet.create({
   settingIconContainer: {
     width: 40,
     height: 40,
-    borderRadius: 8,
-    backgroundColor: '#EEF2FF',
+    borderRadius: radii.md,
+    backgroundColor: colors.indigoTint,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: spacing.md,
   },
   settingContent: {
     flex: 1,
   },
   settingLabel: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: '#1E293B',
+    fontFamily: fonts.semiBold,
+    color: colors.text,
     marginBottom: 2,
   },
   settingDescription: {
     fontSize: 13,
-    fontFamily: 'Inter-Regular',
-    color: '#64748B',
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
   },
   characterLimitInput: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
-    gap: 8,
+    marginTop: spacing.md,
+    gap: spacing.sm,
   },
   input: {
     flex: 1,
     height: 48,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
     fontSize: 16,
-    fontFamily: 'Inter-Medium',
-    color: '#1E293B',
-    backgroundColor: '#F8FAFC',
+    fontFamily: fonts.medium,
+    color: colors.text,
+    backgroundColor: colors.background,
   },
   frequencyOptions: {
     flexDirection: 'row',
-    marginTop: 12,
-    gap: 8,
+    marginTop: spacing.md,
+    gap: spacing.sm,
   },
   frequencyOption: {
     flex: 1,
@@ -609,42 +606,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: 40,
-    borderRadius: 8,
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     gap: 4,
   },
   frequencyOptionActive: {
-    backgroundColor: '#6366F1',
-    borderColor: '#6366F1',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   frequencyOptionText: {
     fontSize: 14,
-    fontFamily: 'Inter-Medium',
-    color: '#64748B',
+    fontFamily: fonts.medium,
+    color: colors.textSecondary,
   },
   frequencyOptionTextActive: {
-    color: '#FFFFFF',
+    color: colors.white,
   },
   frequencyOptionDisabled: {
     opacity: 0.5,
   },
   lastBackupText: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
-    color: '#64748B',
-    marginTop: 12,
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
+    marginTop: spacing.md,
     textAlign: 'center',
   },
   backgroundTaskStatus: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
-    padding: 8,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 8,
-    gap: 8,
+    marginTop: spacing.md,
+    padding: spacing.sm,
+    backgroundColor: colors.background,
+    borderRadius: radii.md,
+    gap: spacing.sm,
   },
   statusIndicator: {
     width: 8,
@@ -652,37 +649,33 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   statusIndicatorActive: {
-    backgroundColor: '#10B981',
+    backgroundColor: colors.success,
   },
   statusIndicatorInactive: {
-    backgroundColor: '#EF4444',
+    backgroundColor: colors.danger,
   },
   statusText: {
     flex: 1,
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
-    color: '#64748B',
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
   },
   statusButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    backgroundColor: '#6366F1',
-    borderRadius: 6,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    backgroundColor: colors.primary,
+    borderRadius: radii.sm + 2,
   },
   statusButtonText: {
     fontSize: 12,
-    fontFamily: 'Inter-Medium',
-    color: '#FFFFFF',
+    fontFamily: fonts.medium,
+    color: colors.white,
   },
   exportButton: {
-    marginTop: 8,
-    borderRadius: 12,
+    marginTop: spacing.sm,
+    borderRadius: radii.lg,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    ...shadows.button,
   },
   exportButtonDisabled: {
     opacity: 0.7,
@@ -691,23 +684,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
-    gap: 8,
+    padding: spacing.lg,
+    gap: spacing.sm,
   },
   exportButtonText: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: '#FFFFFF',
+    fontFamily: fonts.semiBold,
+    color: colors.white,
   },
   appInfo: {
     alignItems: 'center',
-    marginTop: 16,
-    paddingHorizontal: 16,
+    marginTop: spacing.lg,
+    paddingHorizontal: spacing.lg,
   },
   appInfoText: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
-    color: '#94A3B8',
-    marginBottom: 4,
+    fontFamily: fonts.regular,
+    color: colors.textMuted,
+    marginBottom: spacing.xs,
   },
 });

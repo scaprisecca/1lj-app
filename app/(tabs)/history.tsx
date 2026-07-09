@@ -11,6 +11,7 @@ import { DatabaseService } from '@/services/database';
 import type { JournalEntry } from '@/lib/database/schema';
 import { calculateStreak, getTodayString, formatDateString } from '@/lib/utils/date';
 import { htmlToPlainText } from '@/utils/html';
+import { colors, fonts, radii, shadows, spacing } from '@/lib/theme';
 
 const SEARCH_DEBOUNCE_MS = 200;
 
@@ -120,7 +121,7 @@ export default function HistoryScreen() {
           style={[styles.tab, activeTab === 'all' && styles.activeTab]}
           onPress={() => setActiveTab('all')}
         >
-          <Calendar size={16} color={activeTab === 'all' ? 'white' : '#6366F1'} />
+          <Calendar size={16} color={activeTab === 'all' ? colors.white : colors.primary} />
           <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
             All Entries
           </Text>
@@ -130,7 +131,7 @@ export default function HistoryScreen() {
           style={[styles.tab, activeTab === 'history' && styles.activeTab]}
           onPress={() => setActiveTab('history')}
         >
-          <History size={16} color={activeTab === 'history' ? 'white' : '#6366F1'} />
+          <History size={16} color={activeTab === 'history' ? colors.white : colors.primary} />
           <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>
             This Day
           </Text>
@@ -153,18 +154,18 @@ export default function HistoryScreen() {
           </View>
 
           <View style={styles.searchContainer}>
-            <Search size={18} color="#94A3B8" />
+            <Search size={18} color={colors.textMuted} />
             <TextInput
               style={styles.searchInput}
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="Search entries..."
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={colors.textMuted}
               returnKeyType="search"
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <X size={18} color="#94A3B8" />
+                <X size={18} color={colors.textMuted} />
               </TouchableOpacity>
             )}
           </View>
@@ -208,7 +209,7 @@ export default function HistoryScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient colors={['#F8FAFC', '#F1F5F9']} style={styles.gradient}>
+      <LinearGradient colors={colors.backgroundGradient} style={styles.gradient}>
         {isLoading ? (
           <>
             {renderHeader()}
@@ -235,8 +236,8 @@ export default function HistoryScreen() {
               <RefreshControl
                 refreshing={isRefreshing}
                 onRefresh={handleRefresh}
-                colors={['#6366F1']}
-                tintColor="#6366F1"
+                colors={[colors.primary]}
+                tintColor={colors.primary}
               />
             }
           />
@@ -249,83 +250,79 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
   gradient: {
     flex: 1,
   },
   listContent: {
-    paddingBottom: 32,
+    paddingBottom: spacing.xxxl,
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 24,
+    paddingHorizontal: spacing.xxl,
+    paddingTop: spacing.xxxl,
+    paddingBottom: spacing.xxl,
   },
   title: {
-    fontFamily: 'Inter-Bold',
+    fontFamily: fonts.bold,
     fontSize: 28,
-    color: '#1E293B',
-    marginBottom: 8,
+    color: colors.text,
+    marginBottom: spacing.sm,
   },
   subtitle: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: fonts.regular,
     fontSize: 16,
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   tabContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 24,
-    marginBottom: 24,
+    paddingHorizontal: spacing.xxl,
+    marginBottom: spacing.xxl,
   },
   tab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginHorizontal: 4,
-    backgroundColor: 'white',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.md,
+    marginHorizontal: spacing.xs,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   activeTab: {
-    backgroundColor: '#6366F1',
-    borderColor: '#6366F1',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   tabText: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: fonts.medium,
     fontSize: 14,
-    color: '#6366F1',
-    marginLeft: 8,
+    color: colors.primary,
+    marginLeft: spacing.sm,
   },
   activeTabText: {
-    color: 'white',
+    color: colors.white,
   },
   loadingContainer: {
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: spacing.huge,
   },
   loadingText: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: fonts.medium,
     fontSize: 14,
-    color: '#64748B',
-    marginTop: 12,
+    color: colors.textSecondary,
+    marginTop: spacing.md,
   },
   statsContainer: {
     flexDirection: 'row',
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-    marginHorizontal: 24,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: colors.surface,
+    borderRadius: radii.xl,
+    padding: spacing.xl,
+    marginHorizontal: spacing.xxl,
+    marginBottom: spacing.xxl,
+    ...shadows.card,
   },
   statItem: {
     flex: 1,
@@ -334,63 +331,63 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginHorizontal: 24,
-    marginBottom: 24,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    marginHorizontal: spacing.xxl,
+    marginBottom: spacing.xxl,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   searchInput: {
     flex: 1,
-    fontFamily: 'Inter-Regular',
+    fontFamily: fonts.regular,
     fontSize: 15,
-    color: '#1E293B',
+    color: colors.text,
     marginLeft: 10,
   },
   statNumber: {
-    fontFamily: 'Inter-Bold',
+    fontFamily: fonts.bold,
     fontSize: 24,
-    color: '#6366F1',
+    color: colors.primary,
   },
   statLabel: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: fonts.regular,
     fontSize: 12,
-    color: '#64748B',
-    marginTop: 4,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
   },
   historyHeader: {
-    paddingHorizontal: 24,
-    marginBottom: 24,
+    paddingHorizontal: spacing.xxl,
+    marginBottom: spacing.xxl,
   },
   historyTitle: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: fonts.semiBold,
     fontSize: 20,
-    color: '#1E293B',
-    marginBottom: 4,
+    color: colors.text,
+    marginBottom: spacing.xs,
   },
   historySubtitle: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: fonts.regular,
     fontSize: 14,
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   emptyContainer: {
     alignItems: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 24,
+    paddingVertical: spacing.huge,
+    paddingHorizontal: spacing.xxl,
   },
   emptyText: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: fonts.medium,
     fontSize: 16,
-    color: '#94A3B8',
-    marginBottom: 8,
+    color: colors.textMuted,
+    marginBottom: spacing.sm,
   },
   emptySubtext: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: fonts.regular,
     fontSize: 14,
-    color: '#CBD5E1',
+    color: colors.disabled,
     textAlign: 'center',
   },
 });

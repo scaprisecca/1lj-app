@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text } from 'react-native';
+import { colors, fonts, radii, shadows, spacing } from '@/lib/theme';
 
 interface ToastContextValue {
   showToast: (message: string) => void;
@@ -66,24 +67,20 @@ export function useToast(): ToastContextValue {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    left: 24,
-    right: 24,
-    bottom: 32,
+    left: spacing.xxl,
+    right: spacing.xxl,
+    bottom: spacing.xxxl,
     alignItems: 'center',
-    backgroundColor: '#1E293B',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
+    backgroundColor: colors.text,
+    borderRadius: radii.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    ...shadows.toast,
   },
   text: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: fonts.medium,
     fontSize: 14,
-    color: 'white',
+    color: colors.white,
     textAlign: 'center',
   },
 });

@@ -17,6 +17,7 @@ import { useToast } from '@/components/atoms/Toast';
 import { SettingsService } from '@/services/settings';
 import type { JournalEntry } from '@/lib/database/schema';
 import { getTodayString, formatDateString } from '@/lib/utils/date';
+import { colors, fonts, radii, shadows, spacing } from '@/lib/theme';
 
 const PREVIEW_MAX_HEIGHT = 120;
 
@@ -162,7 +163,7 @@ export default function TodayScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6366F1" />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Loading your entry...</Text>
         </View>
       </SafeAreaView>
@@ -172,7 +173,7 @@ export default function TodayScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
-        colors={['#F8FAFC', '#F1F5F9']}
+        colors={colors.backgroundGradient}
         style={styles.gradient}
       >
         <KeyboardAvoidingView
@@ -181,7 +182,7 @@ export default function TodayScreen() {
         >
           {isUsingMock() && (
             <View style={styles.warningContainer}>
-              <AlertTriangle size={16} color="#F59E0B" />
+              <AlertTriangle size={16} color={colors.warning} />
               <Text style={styles.warningText}>
                 Demo mode — data won&apos;t persist. Use a development build for full functionality.
               </Text>
@@ -198,7 +199,7 @@ export default function TodayScreen() {
                     style={styles.saveStatusContainer}
                     onPress={handleManualSave}
                   >
-                    <AlertTriangle size={14} color="#EF4444" />
+                    <AlertTriangle size={14} color={colors.danger} />
                     <Text style={styles.saveStatusTextError}>
                       Save failed - tap to retry
                     </Text>
@@ -207,12 +208,12 @@ export default function TodayScreen() {
                   <View style={styles.saveStatusContainer}>
                     {isSaving ? (
                       <>
-                        <ActivityIndicator size="small" color="#6366F1" />
+                        <ActivityIndicator size="small" color={colors.primary} />
                         <Text style={styles.saveStatusText}>Saving...</Text>
                       </>
                     ) : lastSaved ? (
                       <>
-                        <CheckCircle2 size={14} color="#10B981" />
+                        <CheckCircle2 size={14} color={colors.success} />
                         <Text style={styles.saveStatusTextSaved}>
                           Saved {formatLastSaved(lastSaved)}
                         </Text>
@@ -239,7 +240,7 @@ export default function TodayScreen() {
                 <Text style={styles.previewLabel}>Today so far</Text>
                 <View style={styles.previewLinkContainer}>
                   <Text style={styles.previewLink}>View full entry</Text>
-                  <ChevronRight size={14} color="#6366F1" />
+                  <ChevronRight size={14} color={colors.primary} />
                 </View>
               </View>
               <View style={styles.previewBody}>
@@ -249,7 +250,7 @@ export default function TodayScreen() {
                   baseStyle={styles.previewHtml}
                 />
                 <LinearGradient
-                  colors={['transparent', 'white']}
+                  colors={['transparent', colors.white]}
                   style={styles.previewFade}
                   pointerEvents="none"
                 />
@@ -292,8 +293,8 @@ export default function TodayScreen() {
                 actions.undo,
                 actions.redo,
               ]}
-              iconTint="#6366F1"
-              selectedIconTint="#8B5CF6"
+              iconTint={colors.primary}
+              selectedIconTint={colors.primaryDark}
               style={styles.toolbar}
               flatContainerStyle={styles.toolbarContainer}
             />
@@ -311,10 +312,10 @@ export default function TodayScreen() {
               disabled={!entry.trim() || isSaving || isOverLimit}
             >
               <LinearGradient
-                colors={['#6366F1', '#8B5CF6']}
+                colors={colors.gradient}
                 style={styles.saveButtonGradient}
               >
-                <Save size={20} color="white" />
+                <Save size={20} color={colors.white} />
                 <Text style={styles.saveButtonText}>
                   {isSaving ? 'Saving...' : 'Save Entry'}
                 </Text>
@@ -323,7 +324,7 @@ export default function TodayScreen() {
 
             {!entry.trim() && (
               <View style={styles.motivationContainer}>
-                <Heart size={16} color="#F59E0B" />
+                <Heart size={16} color={colors.warning} />
                 <Text style={styles.motivationText}>
                   Every day is a new page in your story
                 </Text>
@@ -339,7 +340,7 @@ export default function TodayScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
   gradient: {
     flex: 1,
@@ -353,89 +354,81 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: fonts.medium,
     fontSize: 16,
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingHorizontal: spacing.xxl,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
   },
   headerTop: {
     flexDirection: 'column',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   dateText: {
-    fontFamily: 'Inter-Bold',
+    fontFamily: fonts.bold,
     fontSize: 28,
-    color: '#1E293B',
-    marginBottom: 8,
+    color: colors.text,
+    marginBottom: spacing.sm,
   },
   saveStatusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   saveStatusText: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: fonts.medium,
     fontSize: 13,
-    color: '#6366F1',
+    color: colors.primary,
     marginLeft: 6,
   },
   saveStatusTextSaved: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: fonts.medium,
     fontSize: 13,
-    color: '#10B981',
+    color: colors.success,
     marginLeft: 6,
   },
   saveStatusTextError: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: fonts.medium,
     fontSize: 13,
-    color: '#EF4444',
+    color: colors.danger,
     marginLeft: 6,
   },
   subtitle: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: fonts.regular,
     fontSize: 16,
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   inputContainer: {
     flex: 1,
-    marginHorizontal: 24,
-    marginBottom: 16,
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    marginHorizontal: spacing.xxl,
+    marginBottom: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radii.xl,
+    padding: spacing.xl,
+    ...shadows.card,
   },
   previewContainer: {
-    marginHorizontal: 24,
-    marginBottom: 16,
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    marginHorizontal: spacing.xxl,
+    marginBottom: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radii.xl,
+    padding: spacing.lg,
+    ...shadows.card,
   },
   previewHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   previewLabel: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: fonts.semiBold,
     fontSize: 13,
-    color: '#64748B',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -444,9 +437,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   previewLink: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: fonts.medium,
     fontSize: 13,
-    color: '#6366F1',
+    color: colors.primary,
     marginRight: 2,
   },
   previewBody: {
@@ -454,10 +447,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   previewHtml: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: fonts.regular,
     fontSize: 15,
     lineHeight: 22,
-    color: '#334155',
+    color: colors.textBody,
   },
   previewFade: {
     position: 'absolute',
@@ -470,26 +463,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bottomContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: 16,
+    paddingHorizontal: spacing.xxl,
+    paddingBottom: spacing.lg,
   },
   saveButton: {
-    borderRadius: 12,
+    borderRadius: radii.lg,
     overflow: 'hidden',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   saveButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xxl,
   },
   saveButtonText: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: fonts.semiBold,
     fontSize: 16,
-    color: 'white',
-    marginLeft: 8,
+    color: colors.white,
+    marginLeft: spacing.sm,
   },
   motivationContainer: {
     flexDirection: 'row',
@@ -497,47 +490,47 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   motivationText: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: fonts.medium,
     fontSize: 14,
-    color: '#F59E0B',
-    marginLeft: 8,
+    color: colors.warning,
+    marginLeft: spacing.sm,
   },
   overLimitText: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: fonts.medium,
     fontSize: 13,
-    color: '#EF4444',
+    color: colors.danger,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   stickyToolbar: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: colors.border,
   },
   toolbar: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
     minHeight: 50,
   },
   toolbarContainer: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   warningContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF3C7',
-    padding: 8,
-    marginHorizontal: 24,
-    marginTop: 8,
-    borderRadius: 8,
+    backgroundColor: colors.warningTint,
+    padding: spacing.sm,
+    marginHorizontal: spacing.xxl,
+    marginTop: spacing.sm,
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: '#FCD34D',
+    borderColor: colors.warningBorder,
   },
   warningText: {
     flex: 1,
-    fontFamily: 'Inter-Regular',
+    fontFamily: fonts.regular,
     fontSize: 12,
-    color: '#92400E',
-    marginLeft: 8,
+    color: colors.warningText,
+    marginLeft: spacing.sm,
   },
 });

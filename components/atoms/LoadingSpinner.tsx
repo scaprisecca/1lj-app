@@ -8,13 +8,14 @@ import Animated, {
   interpolate 
 } from 'react-native-reanimated';
 import { useEffect } from 'react';
+import { colors, radii } from '@/lib/theme';
 
 interface LoadingSpinnerProps {
   size?: number;
   color?: string;
 }
 
-export function LoadingSpinner({ size = 24, color = '#6366F1' }: LoadingSpinnerProps) {
+export function LoadingSpinner({ size = 24, color = colors.primary }: LoadingSpinnerProps) {
   const rotation = useSharedValue(0);
 
   useEffect(() => {
@@ -51,7 +52,7 @@ const styles = StyleSheet.create({
   },
   spinner: {
     borderWidth: 2,
-    borderRadius: 12,
+    borderRadius: radii.lg,
     borderTopColor: 'transparent',
   },
 });

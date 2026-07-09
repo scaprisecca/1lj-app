@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-nati
 import { LinearGradient } from 'expo-linear-gradient';
 import type { JournalEntry } from '@/lib/database/schema';
 import { getTodayString } from '@/lib/utils/date';
+import { colors, fonts, radii, shadows, spacing } from '@/lib/theme';
 
 interface CalendarGridProps {
   year: number;
@@ -43,7 +44,7 @@ export function CalendarGrid({ year, month, entries, selectedDate, onDateSelect 
         ]}>
           {isSelected ? (
             <LinearGradient
-              colors={['#6366F1', '#8B5CF6']}
+              colors={colors.gradient}
               style={styles.selectedGradient}
             >
               <Text style={[styles.dayText, styles.selectedText]}>{day}</Text>
@@ -94,28 +95,24 @@ export function CalendarGrid({ year, month, entries, selectedDate, onDateSelect 
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 16,
-    marginHorizontal: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: colors.surface,
+    borderRadius: radii.xl,
+    padding: spacing.lg,
+    marginHorizontal: spacing.xxl,
+    ...shadows.card,
   },
   headerRow: {
     flexDirection: 'row',
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   headerCell: {
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
   },
   headerText: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: fonts.semiBold,
     fontSize: 12,
-    color: '#94A3B8',
+    color: colors.textMuted,
     textTransform: 'uppercase',
   },
   grid: {
@@ -129,11 +126,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
+    borderRadius: radii.md,
     position: 'relative',
   },
   todayContent: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.borderLight,
   },
   selectedContent: {
     overflow: 'hidden',
@@ -143,30 +140,30 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
+    borderRadius: radii.md,
   },
   dayText: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: fonts.medium,
     fontSize: 14,
-    color: '#1E293B',
+    color: colors.text,
   },
   todayText: {
-    color: '#6366F1',
-    fontFamily: 'Inter-SemiBold',
+    color: colors.primary,
+    fontFamily: fonts.semiBold,
   },
   selectedText: {
-    color: 'white',
-    fontFamily: 'Inter-SemiBold',
+    color: colors.white,
+    fontFamily: fonts.semiBold,
   },
   entryDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#F59E0B',
+    backgroundColor: colors.warning,
     position: 'absolute',
     bottom: 4,
   },
   selectedDot: {
-    backgroundColor: 'white',
+    backgroundColor: colors.white,
   },
 });

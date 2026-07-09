@@ -3,6 +3,7 @@ import { View, StyleSheet, Platform, Text, TouchableOpacity, ViewStyle } from 'r
 import { RichEditor, RichToolbar, actions } from 'react-native-pell-rich-editor';
 import { countHtmlCharacters, isHtmlEmpty } from '@/utils/html';
 import { Save } from 'lucide-react-native';
+import { colors, fonts, radii, shadows, spacing } from '@/lib/theme';
 
 interface RichTextEditorProps {
   value?: string;
@@ -164,8 +165,8 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
                 actions.undo,
                 actions.redo,
               ]}
-              iconTint="#6366F1"
-              selectedIconTint="#8B5CF6"
+              iconTint={colors.primary}
+              selectedIconTint={colors.primaryDark}
               style={styles.toolbar}
               flatContainerStyle={styles.toolbarContainer}
             />
@@ -175,7 +176,7 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
                 onPress={onSave}
                 disabled={isSaving || disabled || saveDisabled}
               >
-                <Save size={18} color={isSaving ? "#94A3B8" : "#6366F1"} />
+                <Save size={18} color={isSaving ? colors.textMuted : colors.primary} />
                 <Text style={[styles.saveButtonText, isSaving && styles.saveButtonTextDisabled]}>
                   {isSaving ? 'Saving...' : 'Save'}
                 </Text>
@@ -207,9 +208,9 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
 
 const editorStyle = {
   backgroundColor: 'transparent',
-  color: '#1E293B',
+  color: colors.text,
   fontSize: '16px',
-  fontFamily: Platform.OS === 'ios' ? 'Inter' : 'Inter-Regular',
+  fontFamily: Platform.OS === 'ios' ? 'Inter' : fonts.regular,
   lineHeight: '24px',
   padding: '16px',
   minHeight: '200px',
@@ -217,82 +218,78 @@ const editorStyle = {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
-    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderRadius: radii.xl,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    ...shadows.card,
   },
   editor: {
     flex: 1,
     minHeight: 200,
-    backgroundColor: 'white',
+    backgroundColor: colors.surface,
   },
   toolbarWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: colors.border,
   },
   toolbar: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
     minHeight: 50,
   },
   toolbarContainer: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   saveButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
     borderLeftWidth: 1,
-    borderLeftColor: '#E2E8F0',
+    borderLeftColor: colors.border,
     minHeight: 50,
     justifyContent: 'center',
   },
   saveButtonText: {
     fontSize: 14,
-    color: '#6366F1',
+    color: colors.primary,
     marginLeft: 6,
-    fontFamily: Platform.OS === 'ios' ? 'Inter' : 'Inter-SemiBold',
+    fontFamily: Platform.OS === 'ios' ? 'Inter' : fonts.semiBold,
     fontWeight: '600',
   },
   saveButtonTextDisabled: {
-    color: '#94A3B8',
+    color: colors.textMuted,
   },
   characterCountContainer: {
-    backgroundColor: '#F8FAFC',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    backgroundColor: colors.background,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: colors.border,
   },
   characterCountText: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textSecondary,
     textAlign: 'right',
-    fontFamily: Platform.OS === 'ios' ? 'Inter' : 'Inter-Regular',
+    fontFamily: Platform.OS === 'ios' ? 'Inter' : fonts.regular,
   },
   characterCountWarning: {
-    color: '#F59E0B',
+    color: colors.warning,
   },
   characterCountLimit: {
-    color: '#EF4444',
+    color: colors.danger,
     fontWeight: '600',
   },
   characterCountOverLimit: {
     fontSize: 12,
-    color: '#EF4444',
+    color: colors.danger,
     textAlign: 'right',
     marginTop: 2,
-    fontFamily: Platform.OS === 'ios' ? 'Inter' : 'Inter-Medium',
+    fontFamily: Platform.OS === 'ios' ? 'Inter' : fonts.medium,
   },
 });
 
