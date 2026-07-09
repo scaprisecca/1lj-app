@@ -14,7 +14,9 @@ interface RichTextEditorProps {
   style?: ViewStyle;
   showCharacterCount?: boolean;
   characterLimit?: number;
+  onCharacterCountChange?: (count: number) => void;
   showSaveButton?: boolean;
+  saveDisabled?: boolean;
   isSaving?: boolean;
   editorRef?: React.RefObject<RichEditor>;
   showToolbar?: boolean;
@@ -38,7 +40,9 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
     style,
     showCharacterCount = false,
     characterLimit,
+    onCharacterCountChange,
     showSaveButton = false,
+    saveDisabled = false,
     isSaving = false,
     editorRef,
     showToolbar = true,
@@ -73,20 +77,26 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
       setContentHTML: (html: string) => {
         try {
           richTextRef.current?.setContentHTML(html);
-          setCharacterCount(countHtmlCharacters(html));
+          const newCharCount = countHtmlCharacters(html);
+          setCharacterCount(newCharCount);
+          onCharacterCountChange?.(newCharCount);
         } catch (error) {
           console.error('[RichTextEditor] Error setting HTML content:', error);
           setCharacterCount(0);
+          onCharacterCountChange?.(0);
         }
       },
     }));
 
     useEffect(() => {
       try {
-        setCharacterCount(countHtmlCharacters(value));
+        const newCharCount = countHtmlCharacters(value);
+        setCharacterCount(newCharCount);
+        onCharacterCountChange?.(newCharCount);
       } catch (error) {
         console.error('[RichTextEditor] Error counting characters:', error);
         setCharacterCount(0);
+        onCharacterCountChange?.(0);
       }
     }, [value]);
 
@@ -99,18 +109,18 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
       try {
         const newCharCount = countHtmlCharacters(html);
         setCharacterCount(newCharCount);
+        onCharacterCountChange?.(newCharCount);
 
-        // If there's a character limit, enforce it
-        if (characterLimit && newCharCount > characterLimit) {
-          // Don't call onChange if limit exceeded
-          return;
-        }
-
+        // Always propagate changes — even over the limit — so the editor
+        // and the saved value never silently desync. The over-limit state
+        // is surfaced via the character count UI and left to the caller
+        // to gate saving on.
         onChange?.(html);
       } catch (error) {
         console.error('[RichTextEditor] Error handling content change:', error);
         // Still update character count to prevent UI from breaking
         setCharacterCount(0);
+        onCharacterCountChange?.(0);
       }
     };
 
@@ -118,6 +128,7 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
       onBlur?.();
     };
 
+    const isOverLimit = !!characterLimit && characterCount > characterLimit;
     const isAtLimit = characterLimit && characterCount >= characterLimit;
     const isNearLimit = characterLimit && characterCount >= characterLimit * 0.9;
 
@@ -162,7 +173,7 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
               <TouchableOpacity
                 style={styles.saveButton}
                 onPress={onSave}
-                disabled={isSaving || disabled}
+                disabled={isSaving || disabled || saveDisabled}
               >
                 <Save size={18} color={isSaving ? "#94A3B8" : "#6366F1"} />
                 <Text style={[styles.saveButtonText, isSaving && styles.saveButtonTextDisabled]}>
@@ -182,6 +193,11 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
             ]}>
               {characterCount}{characterLimit ? ` / ${characterLimit}` : ''} characters
             </Text>
+            {isOverLimit && (
+              <Text style={styles.characterCountOverLimit}>
+                {characterCount - (characterLimit as number)} characters over limit
+              </Text>
+            )}
           </View>
         )}
       </View>
@@ -270,6 +286,13 @@ const styles = StyleSheet.create({
   characterCountLimit: {
     color: '#EF4444',
     fontWeight: '600',
+  },
+  characterCountOverLimit: {
+    fontSize: 12,
+    color: '#EF4444',
+    textAlign: 'right',
+    marginTop: 2,
+    fontFamily: Platform.OS === 'ios' ? 'Inter' : 'Inter-Medium',
   },
 });
 

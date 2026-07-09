@@ -14,6 +14,7 @@ import { RichTextEditor, type RichTextEditorRef } from '@/components/organisms/R
 import { RichToolbar, actions, RichEditor } from 'react-native-pell-rich-editor';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useToast } from '@/components/atoms/Toast';
+import { SettingsService } from '@/services/settings';
 import type { JournalEntry } from '@/lib/database/schema';
 import { getTodayString, formatDateString } from '@/lib/utils/date';
 
@@ -25,6 +26,8 @@ export default function TodayScreen() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [enableAutoSave, setEnableAutoSave] = useState<boolean>(false);
   const [hasSavedContent, setHasSavedContent] = useState<boolean>(false);
+  const [characterLimit, setCharacterLimit] = useState<number | undefined>(undefined);
+  const [characterCount, setCharacterCount] = useState<number>(0);
   const richTextRef = useRef<RichTextEditorRef>(null);
   const externalEditorRef = useRef<RichEditor>(null);
   const savedBodyRef = useRef<string>('');
@@ -33,9 +36,11 @@ export default function TodayScreen() {
   const { width } = useWindowDimensions();
 
   const today = getTodayString();
+  const isOverLimit = characterLimit !== undefined && characterCount > characterLimit;
 
   useEffect(() => {
     loadTodayEntry();
+    SettingsService.getSetting('characterLimit').then(setCharacterLimit);
   }, []);
 
   const loadTodayEntry = async () => {
@@ -109,7 +114,7 @@ export default function TodayScreen() {
   };
 
   const handleManualSave = async () => {
-    if (!entry.trim()) return;
+    if (!entry.trim() || isOverLimit) return;
 
     try {
       await saveNow();
@@ -263,6 +268,8 @@ export default function TodayScreen() {
               placeholder="Write about your day... Use the toolbar above the keyboard to format your text."
               style={styles.richTextEditor}
               showCharacterCount={true}
+              characterLimit={characterLimit}
+              onCharacterCountChange={setCharacterCount}
               showSaveButton={false}
               showToolbar={false}
               isSaving={isSaving}
@@ -293,10 +300,15 @@ export default function TodayScreen() {
           </View>
 
           <View style={styles.bottomContainer}>
+            {isOverLimit && (
+              <Text style={styles.overLimitText}>
+                {characterCount - (characterLimit as number)} characters over limit
+              </Text>
+            )}
             <TouchableOpacity
               style={[styles.saveButton, { opacity: entry.trim() ? 1 : 0.5 }]}
               onPress={handleManualSave}
-              disabled={!entry.trim() || isSaving}
+              disabled={!entry.trim() || isSaving || isOverLimit}
             >
               <LinearGradient
                 colors={['#6366F1', '#8B5CF6']}
@@ -489,6 +501,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#F59E0B',
     marginLeft: 8,
+  },
+  overLimitText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 13,
+    color: '#EF4444',
+    textAlign: 'center',
+    marginBottom: 8,
   },
   stickyToolbar: {
     backgroundColor: '#F8FAFC',

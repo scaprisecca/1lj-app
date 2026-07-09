@@ -11,6 +11,7 @@ import { WidgetService } from '@/services/widget';
 import { RichTextEditor, type RichTextEditorRef } from '@/components/organisms/RichTextEditor';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useToast } from '@/components/atoms/Toast';
+import { SettingsService } from '@/services/settings';
 import RenderHtml from 'react-native-render-html';
 import { useWindowDimensions } from 'react-native';
 import { showErrorAlert, logError } from '@/utils/errorHandling';
@@ -28,11 +29,18 @@ export default function EntryDetailScreen() {
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
   const [editedContent, setEditedContent] = useState<string>('');
   const [enableAutoSave, setEnableAutoSave] = useState<boolean>(false);
+  const [characterLimit, setCharacterLimit] = useState<number | undefined>(undefined);
+  const [characterCount, setCharacterCount] = useState<number>(0);
   const { showToast } = useToast();
+  const isOverLimit = characterLimit !== undefined && characterCount > characterLimit;
 
   useEffect(() => {
     loadEntry();
   }, [date]);
+
+  useEffect(() => {
+    SettingsService.getSetting('characterLimit').then(setCharacterLimit);
+  }, []);
 
   const loadEntry = async () => {
     if (!date) {
@@ -93,7 +101,7 @@ export default function EntryDetailScreen() {
   const { saveNow, isSaving, lastSaved, error: saveError } = useAutoSave(editedContent, {
     onSave: saveEntry,
     delay: 2000,
-    enabled: enableAutoSave && isEditMode && !!editedContent.trim(),
+    enabled: enableAutoSave && isEditMode && !!editedContent.trim() && !isOverLimit,
     onSaveSuccess: () => {
       console.log('Auto-saved successfully');
     },
@@ -115,6 +123,8 @@ export default function EntryDetailScreen() {
   };
 
   const handleSaveAndExit = async () => {
+    if (isOverLimit) return;
+
     if (editedContent.trim()) {
       try {
         await saveNow();
@@ -146,7 +156,7 @@ export default function EntryDetailScreen() {
   };
 
   const handleManualSave = async () => {
-    if (!editedContent.trim()) return;
+    if (!editedContent.trim() || isOverLimit) return;
 
     try {
       await saveNow();
@@ -235,10 +245,10 @@ export default function EntryDetailScreen() {
           ) : (
             <TouchableOpacity
               onPress={handleSaveAndExit}
-              style={styles.saveIconButton}
-              disabled={isSaving}
+              style={[styles.saveIconButton, isOverLimit && styles.saveIconButtonDisabled]}
+              disabled={isSaving || isOverLimit}
             >
-              <Save size={20} color="#10B981" />
+              <Save size={20} color={isOverLimit ? '#94A3B8' : '#10B981'} />
             </TouchableOpacity>
           )}
         </View>
@@ -265,7 +275,10 @@ export default function EntryDetailScreen() {
               placeholder="Write about your day..."
               style={styles.richTextEditor}
               showCharacterCount={true}
+              characterLimit={characterLimit}
+              onCharacterCountChange={setCharacterCount}
               showSaveButton={true}
+              saveDisabled={isOverLimit}
               isSaving={isSaving}
             />
           </View>
@@ -274,10 +287,15 @@ export default function EntryDetailScreen() {
         {/* Edit Mode Bottom Actions */}
         {isEditMode && (
           <View style={styles.bottomContainer}>
+            {isOverLimit && (
+              <Text style={styles.overLimitText}>
+                {characterCount - (characterLimit as number)} characters over limit
+              </Text>
+            )}
             <TouchableOpacity
               style={[styles.saveButton, { opacity: editedContent.trim() ? 1 : 0.5 }]}
               onPress={handleManualSave}
-              disabled={!editedContent.trim() || isSaving}
+              disabled={!editedContent.trim() || isSaving || isOverLimit}
             >
               <LinearGradient
                 colors={['#6366F1', '#8B5CF6']}
@@ -352,6 +370,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#D1FAE5',
     borderRadius: 8,
   },
+  saveIconButtonDisabled: {
+    backgroundColor: '#F1F5F9',
+  },
   dateText: {
     fontFamily: 'Inter-Bold',
     fontSize: 18,
@@ -417,5 +438,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'white',
     marginLeft: 8,
+  },
+  overLimitText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 13,
+    color: '#EF4444',
+    textAlign: 'center',
+    marginBottom: 8,
   },
 });
