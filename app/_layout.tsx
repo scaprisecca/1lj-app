@@ -14,6 +14,7 @@ import { initializeDatabase, runMigrations } from '@/lib/database/client';
 import { DataMigration } from '@/lib/database/migrations/data-migration';
 import { TaskManagerService } from '@/services/task-manager';
 import { SettingsService } from '@/services/settings';
+import { ToastProvider } from '@/components/atoms/Toast';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -95,12 +96,12 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <ToastProvider>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
-    </>
+    </ToastProvider>
   );
 }

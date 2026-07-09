@@ -29,6 +29,7 @@ import { SettingsService, type AutoBackupFrequency, type AppSettings } from '@/s
 import { DatabaseService } from '@/services/database';
 import { TaskManagerService } from '@/services/task-manager';
 import { useBackgroundTaskPermissions } from '@/hooks/useBackgroundTaskPermissions';
+import { useToast } from '@/components/atoms/Toast';
 
 export default function SettingsScreen() {
   const [settings, setSettings] = useState<AppSettings>({
@@ -43,6 +44,7 @@ export default function SettingsScreen() {
   const [isUpdatingFrequency, setIsUpdatingFrequency] = useState(false);
   const [characterLimitInput, setCharacterLimitInput] = useState('280');
   const backgroundPermissions = useBackgroundTaskPermissions();
+  const { showToast } = useToast();
 
   useEffect(() => {
     loadSettings();
@@ -118,7 +120,7 @@ export default function SettingsScreen() {
       await SettingsService.updateSetting('backupDestination', dirPath);
       setSettings({ ...settings, backupDestination: dirPath });
 
-      Alert.alert('Success', 'Backup destination updated');
+      showToast('Backup destination updated');
     } catch (error) {
       console.error('Error selecting backup destination:', error);
       Alert.alert('Error', 'Failed to select backup destination');
@@ -194,20 +196,11 @@ export default function SettingsScreen() {
         const updatedSettings = await SettingsService.loadSettings();
         setSettings(updatedSettings);
 
-        Alert.alert(
-          'Export Complete',
-          `Successfully exported ${entries.length} journal ${entries.length === 1 ? 'entry' : 'entries'}.\n\nBackup saved to: ${backupUri}`,
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                if (Platform.OS !== 'web') {
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                }
-              },
-            },
-          ]
-        );
+        if (Platform.OS !== 'web') {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+
+        showToast(`Exported ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`);
       }
     } catch (error) {
       console.error('Error exporting:', error);

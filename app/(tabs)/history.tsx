@@ -16,6 +16,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { calculateStreak, getTodayString } from '@/lib/utils/date';
+import { useToast } from '@/components/atoms/Toast';
 
 // Backup location options
 type BackupLocation = 'documents' | 'custom' | 'share';
@@ -41,6 +42,7 @@ export default function HistoryScreen() {
     location: 'documents',
     autoBackup: true
   });
+  const { showToast } = useToast();
 
   useEffect(() => {
     loadEntries();
@@ -157,7 +159,7 @@ export default function HistoryScreen() {
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
 
-      Alert.alert('Success', `Backup created successfully!\n\nLocation: ${getBackupLocationText()}`);
+      showToast(`Backup created — ${getBackupLocationText()}`);
     } catch (error) {
       console.error('Error creating backup:', error);
       Alert.alert('Error', 'Failed to create backup. Please try again.');
@@ -224,7 +226,7 @@ export default function HistoryScreen() {
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
 
-      Alert.alert('Success', 'Backup restored successfully!');
+      showToast('Backup restored successfully');
     } catch (error) {
       console.error('Error restoring backup:', error);
       Alert.alert('Error', 'Failed to restore backup. Please check the file format.');

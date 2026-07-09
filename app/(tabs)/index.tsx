@@ -11,6 +11,7 @@ import { isUsingMock } from '@/lib/database/client';
 import { RichTextEditor, type RichTextEditorRef } from '@/components/organisms/RichTextEditor';
 import { RichToolbar, actions, RichEditor } from 'react-native-pell-rich-editor';
 import { useAutoSave } from '@/hooks/useAutoSave';
+import { useToast } from '@/components/atoms/Toast';
 import type { JournalEntry } from '@/lib/database/schema';
 import { getTodayString, formatDateString } from '@/lib/utils/date';
 
@@ -23,6 +24,7 @@ export default function TodayScreen() {
   const richTextRef = useRef<RichTextEditorRef>(null);
   const externalEditorRef = useRef<RichEditor>(null);
   const savedBodyRef = useRef<string>('');
+  const { showToast } = useToast();
 
   const today = getTodayString();
 
@@ -113,7 +115,7 @@ export default function TodayScreen() {
       // Clear editor for next note
       setEntry('');
       richTextRef.current?.setContentHTML('');
-      Alert.alert('Saved!', 'Your journal entry has been saved.');
+      showToast('Entry saved');
     } catch (error) {
       console.error('Error saving entry:', error);
       Alert.alert('Error', 'Failed to save your entry. Please try again.');

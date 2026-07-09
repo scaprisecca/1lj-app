@@ -10,6 +10,7 @@ import { BackupService } from '@/services/backup';
 import { WidgetService } from '@/services/widget';
 import { RichTextEditor, type RichTextEditorRef } from '@/components/organisms/RichTextEditor';
 import { useAutoSave } from '@/hooks/useAutoSave';
+import { useToast } from '@/components/atoms/Toast';
 import RenderHtml from 'react-native-render-html';
 import { useWindowDimensions } from 'react-native';
 import { showErrorAlert, logError } from '@/utils/errorHandling';
@@ -27,6 +28,7 @@ export default function EntryDetailScreen() {
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
   const [editedContent, setEditedContent] = useState<string>('');
   const [enableAutoSave, setEnableAutoSave] = useState<boolean>(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     loadEntry();
@@ -118,7 +120,7 @@ export default function EntryDetailScreen() {
         await saveNow();
         setIsEditMode(false);
         setEnableAutoSave(false);
-        Alert.alert('Saved!', 'Your changes have been saved.');
+        showToast('Changes saved');
       } catch (error) {
         logError(error, 'EntryDetailScreen.handleSaveAndExit');
         showErrorAlert(error, 'Save Error', {
@@ -148,7 +150,7 @@ export default function EntryDetailScreen() {
 
     try {
       await saveNow();
-      Alert.alert('Saved!', 'Your journal entry has been saved.');
+      showToast('Entry saved');
     } catch (error) {
       logError(error, 'EntryDetailScreen.handleManualSave');
       showErrorAlert(error, 'Save Error', {
