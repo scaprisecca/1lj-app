@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, FlatList } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, FlatList, PanResponder } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ChevronLeft, ChevronRight, Plus, ChevronDown, X, CalendarCheck } from 'lucide-react-native';
@@ -11,6 +11,14 @@ import { ErrorMessage } from '@/components/atoms/ErrorMessage';
 import { DatabaseService } from '@/services/database';
 import type { JournalEntry } from '@/lib/database/schema';
 import { formatDateString } from '@/lib/utils/date';
+
+const MONTH_LABELS = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+const SWIPE_DISTANCE_THRESHOLD = 60;
+const SWIPE_DIRECTION_RATIO = 2;
 
 export default function CalendarScreen() {
   const router = useRouter();
@@ -103,10 +111,35 @@ export default function CalendarScreen() {
     const newDate = new Date(currentDate);
     newDate.setFullYear(year);
     setCurrentDate(newDate);
-    setShowYearPicker(false);
     setSelectedDate('');
     setSelectedEntry(null);
   };
+
+  const handleMonthSelect = (monthIndex: number) => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(monthIndex);
+    setCurrentDate(newDate);
+    setSelectedDate('');
+    setSelectedEntry(null);
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return (
+          Math.abs(gestureState.dx) > 20 &&
+          Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * SWIPE_DIRECTION_RATIO
+        );
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dx > SWIPE_DISTANCE_THRESHOLD) {
+          navigateMonth('prev');
+        } else if (gestureState.dx < -SWIPE_DISTANCE_THRESHOLD) {
+          navigateMonth('next');
+        }
+      },
+    })
+  ).current;
 
   const renderYearItem = ({ item: year }: { item: number }) => {
     const isCurrentYear = year === currentDate.getFullYear();
@@ -130,6 +163,10 @@ export default function CalendarScreen() {
       </SafeAreaView>
     );
   }
+
+  const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+  const daysElapsed = isCurrentMonth() ? new Date().getDate() : daysInMonth;
+  const completionPercent = Math.round((entries.length / daysElapsed) * 100);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -167,13 +204,17 @@ export default function CalendarScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Today Button */}
-          {!isCurrentMonth() && (
-            <TouchableOpacity style={styles.todayButton} onPress={goToToday}>
-              <CalendarCheck size={14} color="#6366F1" />
-              <Text style={styles.todayButtonText}>Today</Text>
-            </TouchableOpacity>
-          )}
+          {/* Today Button — space is always reserved so the grid below doesn't shift */}
+          <TouchableOpacity
+            style={[styles.todayButton, isCurrentMonth() && styles.todayButtonHidden]}
+            onPress={goToToday}
+            disabled={isCurrentMonth()}
+            accessibilityElementsHidden={isCurrentMonth()}
+            importantForAccessibility={isCurrentMonth() ? 'no-hide-descendants' : 'yes'}
+          >
+            <CalendarCheck size={14} color="#6366F1" />
+            <Text style={styles.todayButtonText}>Today</Text>
+          </TouchableOpacity>
 
           {/* Calendar Grid */}
           {isLoading ? (
@@ -182,13 +223,15 @@ export default function CalendarScreen() {
               <Text style={styles.loadingText}>Loading calendar...</Text>
             </View>
           ) : (
-            <CalendarGrid
-              year={currentDate.getFullYear()}
-              month={currentDate.getMonth() + 1}
-              entries={entries}
-              selectedDate={selectedDate}
-              onDateSelect={handleDateSelect}
-            />
+            <View {...panResponder.panHandlers}>
+              <CalendarGrid
+                year={currentDate.getFullYear()}
+                month={currentDate.getMonth() + 1}
+                entries={entries}
+                selectedDate={selectedDate}
+                onDateSelect={handleDateSelect}
+              />
+            </View>
           )}
 
           {/* Selected Date Info */}
@@ -238,16 +281,14 @@ export default function CalendarScreen() {
                 <Text style={styles.statLabel}>Entries</Text>
               </View>
               <View style={styles.statItem}>
-                <Text style={styles.statNumber}>
-                  {Math.round((entries.length / new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()) * 100)}%
-                </Text>
-                <Text style={styles.statLabel}>Completion</Text>
+                <Text style={styles.statNumber}>{completionPercent}%</Text>
+                <Text style={styles.statLabel}>Days Journaled</Text>
               </View>
             </View>
           </View>
         </ScrollView>
 
-        {/* Year Picker Modal */}
+        {/* Month/Year Picker Modal */}
         <Modal
           visible={showYearPicker}
           transparent={true}
@@ -257,7 +298,7 @@ export default function CalendarScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Select Year</Text>
+                <Text style={styles.modalTitle}>Jump to Month</Text>
                 <TouchableOpacity
                   style={styles.closeButton}
                   onPress={() => setShowYearPicker(false)}
@@ -265,7 +306,31 @@ export default function CalendarScreen() {
                   <X size={24} color="#64748B" />
                 </TouchableOpacity>
               </View>
-              
+
+              <Text style={styles.modalSectionLabel}>Month</Text>
+              <View style={styles.monthGrid}>
+                {MONTH_LABELS.map((label, index) => {
+                  const isCurrentSelection = index === currentDate.getMonth();
+                  return (
+                    <TouchableOpacity
+                      key={label}
+                      style={[styles.monthGridItem, isCurrentSelection && styles.monthGridItemSelected]}
+                      onPress={() => handleMonthSelect(index)}
+                    >
+                      <Text
+                        style={[
+                          styles.monthGridItemText,
+                          isCurrentSelection && styles.monthGridItemTextSelected,
+                        ]}
+                      >
+                        {label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <Text style={styles.modalSectionLabel}>Year</Text>
               <FlatList
                 data={generateYearList()}
                 renderItem={renderYearItem}
@@ -369,6 +434,9 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 1,
   },
+  todayButtonHidden: {
+    opacity: 0,
+  },
   todayButtonText: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 13,
@@ -467,8 +535,8 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: 'white',
     borderRadius: 16,
-    width: '80%',
-    maxHeight: '60%',
+    width: '85%',
+    maxHeight: '80%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.25,
@@ -490,6 +558,40 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 4,
+  },
+  modalSectionLabel: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 13,
+    color: '#94A3B8',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  monthGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 12,
+  },
+  monthGridItem: {
+    width: '25%',
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  monthGridItemSelected: {
+    backgroundColor: '#EEF2FF',
+    borderRadius: 8,
+  },
+  monthGridItemText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+    color: '#64748B',
+  },
+  monthGridItemTextSelected: {
+    fontFamily: 'Inter-SemiBold',
+    color: '#6366F1',
   },
   yearList: {
     maxHeight: 300,
