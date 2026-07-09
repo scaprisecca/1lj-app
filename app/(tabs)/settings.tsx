@@ -13,7 +13,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
-  Settings as SettingsIcon,
   Download,
   Upload,
   FolderOpen,
@@ -300,17 +299,11 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <LinearGradient
-          colors={['#667eea', '#764ba2']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.header}
-        >
-          <SettingsIcon size={32} color="#FFFFFF" />
+        {/* Header — matches the left-aligned pattern used by Calendar/History */}
+        <View style={styles.header}>
           <Text style={styles.headerTitle}>Settings</Text>
           <Text style={styles.headerSubtitle}>Customize your journal experience</Text>
-        </LinearGradient>
+        </View>
 
         {/* Editor Settings Section */}
         <View style={styles.section}>
@@ -456,7 +449,7 @@ export default function SettingsScreen() {
             activeOpacity={0.7}
           >
             <LinearGradient
-              colors={isExporting ? ['#94A3B8', '#94A3B8'] : ['#667eea', '#764ba2']}
+              colors={isExporting ? ['#94A3B8', '#94A3B8'] : ['#6366F1', '#8B5CF6']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.exportButtonGradient}
@@ -520,22 +513,20 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   header: {
-    padding: 24,
-    alignItems: 'center',
-    marginBottom: 24,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 24,
   },
   headerTitle: {
     fontSize: 28,
     fontFamily: 'Inter-Bold',
-    color: '#FFFFFF',
-    marginTop: 12,
+    color: '#1E293B',
+    marginBottom: 8,
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: 'Inter-Regular',
-    color: '#FFFFFF',
-    opacity: 0.9,
-    marginTop: 4,
+    color: '#64748B',
   },
   section: {
     marginBottom: 24,
