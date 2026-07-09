@@ -1,15 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { History, Calendar } from 'lucide-react-native';
+import { History, Calendar, Search, X } from 'lucide-react-native';
 import { HistoryCard } from '@/components/molecules/HistoryCard';
 import { LoadingSpinner } from '@/components/atoms/LoadingSpinner';
 import { ErrorMessage } from '@/components/atoms/ErrorMessage';
 import { DatabaseService } from '@/services/database';
 import type { JournalEntry } from '@/lib/database/schema';
-import { calculateStreak, getTodayString } from '@/lib/utils/date';
+import { calculateStreak, getTodayString, formatDateString } from '@/lib/utils/date';
+import { htmlToPlainText } from '@/utils/html';
+
+const SEARCH_DEBOUNCE_MS = 200;
 
 export default function HistoryScreen() {
   const router = useRouter();
@@ -19,10 +22,19 @@ export default function HistoryScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'history'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
 
   useEffect(() => {
     loadEntries();
   }, []);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setDebouncedQuery(searchQuery.trim().toLowerCase());
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timeout);
+  }, [searchQuery]);
 
   useEffect(() => {
     if (activeTab === 'history') {
@@ -72,6 +84,20 @@ export default function HistoryScreen() {
     });
   };
 
+  const filteredEntries = useMemo(() => {
+    if (!debouncedQuery) return entries;
+
+    return entries.filter((entry) => {
+      const plainText = htmlToPlainText(entry.html_body).toLowerCase();
+      const dateText = formatDateString(entry.entry_date, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }).toLowerCase();
+      return plainText.includes(debouncedQuery) || dateText.includes(debouncedQuery);
+    });
+  }, [entries, debouncedQuery]);
+
   if (error) {
     return (
       <SafeAreaView style={styles.container}>
@@ -80,7 +106,7 @@ export default function HistoryScreen() {
     );
   }
 
-  const listData = activeTab === 'all' ? entries : historyEntries;
+  const listData = activeTab === 'all' ? filteredEntries : historyEntries;
 
   const renderHeader = () => (
     <>
@@ -112,18 +138,37 @@ export default function HistoryScreen() {
       </View>
 
       {activeTab === 'all' ? (
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{entries.length}</Text>
-            <Text style={styles.statLabel}>Total Entries</Text>
+        <>
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{entries.length}</Text>
+              <Text style={styles.statLabel}>Total Entries</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>
+                {calculateStreak(entries.map((entry) => entry.entry_date), getTodayString())}
+              </Text>
+              <Text style={styles.statLabel}>Day Streak</Text>
+            </View>
           </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>
-              {calculateStreak(entries.map((entry) => entry.entry_date), getTodayString())}
-            </Text>
-            <Text style={styles.statLabel}>Day Streak</Text>
+
+          <View style={styles.searchContainer}>
+            <Search size={18} color="#94A3B8" />
+            <TextInput
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search entries..."
+              placeholderTextColor="#94A3B8"
+              returnKeyType="search"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <X size={18} color="#94A3B8" />
+              </TouchableOpacity>
+            )}
           </View>
-        </View>
+        </>
       ) : (
         <View style={styles.historyHeader}>
           <Text style={styles.historyTitle}>On {formatMonthDay()}</Text>
@@ -137,6 +182,15 @@ export default function HistoryScreen() {
 
   const renderEmpty = () => {
     if (isLoading) return null;
+
+    if (activeTab === 'all' && debouncedQuery) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No entries match &quot;{searchQuery.trim()}&quot;</Text>
+          <Text style={styles.emptySubtext}>Try a different search term</Text>
+        </View>
+      );
+    }
 
     return (
       <View style={styles.emptyContainer}>
@@ -276,6 +330,25 @@ const styles = StyleSheet.create({
   statItem: {
     flex: 1,
     alignItems: 'center',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginHorizontal: 24,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  searchInput: {
+    flex: 1,
+    fontFamily: 'Inter-Regular',
+    fontSize: 15,
+    color: '#1E293B',
+    marginLeft: 10,
   },
   statNumber: {
     fontFamily: 'Inter-Bold',
