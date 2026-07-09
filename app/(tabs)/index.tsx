@@ -1,9 +1,11 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, ActivityIndicator, KeyboardAvoidingView, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect, useRef } from 'react';
-import { Save, Heart, AlertTriangle, CheckCircle2, Clock } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { Save, Heart, AlertTriangle, CheckCircle2, Clock, ChevronRight } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import RenderHtml from 'react-native-render-html';
 import { DatabaseService } from '@/services/database';
 import { BackupService } from '@/services/backup';
 import { WidgetService } from '@/services/widget';
@@ -15,6 +17,8 @@ import { useToast } from '@/components/atoms/Toast';
 import type { JournalEntry } from '@/lib/database/schema';
 import { getTodayString, formatDateString } from '@/lib/utils/date';
 
+const PREVIEW_MAX_HEIGHT = 120;
+
 export default function TodayScreen() {
   const [entry, setEntry] = useState<string>('');
   const [todayEntry, setTodayEntry] = useState<JournalEntry | null>(null);
@@ -25,6 +29,8 @@ export default function TodayScreen() {
   const externalEditorRef = useRef<RichEditor>(null);
   const savedBodyRef = useRef<string>('');
   const { showToast } = useToast();
+  const router = useRouter();
+  const { width } = useWindowDimensions();
 
   const today = getTodayString();
 
@@ -218,6 +224,34 @@ export default function TodayScreen() {
             </Text>
           </View>
 
+          {hasSavedContent && (
+            <TouchableOpacity
+              style={styles.previewContainer}
+              onPress={() => router.push(`/entry/${today}`)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.previewHeader}>
+                <Text style={styles.previewLabel}>Today so far</Text>
+                <View style={styles.previewLinkContainer}>
+                  <Text style={styles.previewLink}>View full entry</Text>
+                  <ChevronRight size={14} color="#6366F1" />
+                </View>
+              </View>
+              <View style={styles.previewBody}>
+                <RenderHtml
+                  contentWidth={width - 88}
+                  source={{ html: savedBodyRef.current }}
+                  baseStyle={styles.previewHtml}
+                />
+                <LinearGradient
+                  colors={['transparent', 'white']}
+                  style={styles.previewFade}
+                  pointerEvents="none"
+                />
+              </View>
+            </TouchableOpacity>
+          )}
+
           <View style={styles.inputContainer}>
             <RichTextEditor
               ref={richTextRef}
@@ -367,6 +401,58 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+  },
+  previewContainer: {
+    marginHorizontal: 24,
+    marginBottom: 16,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  previewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  previewLabel: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 13,
+    color: '#64748B',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  previewLinkContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  previewLink: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 13,
+    color: '#6366F1',
+    marginRight: 2,
+  },
+  previewBody: {
+    maxHeight: PREVIEW_MAX_HEIGHT,
+    overflow: 'hidden',
+  },
+  previewHtml: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#334155',
+  },
+  previewFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 32,
   },
   richTextEditor: {
     flex: 1,
