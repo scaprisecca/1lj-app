@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Calendar, Edit3 } from 'lucide-react-native';
 import type { JournalEntry } from '@/lib/database/schema';
 import { formatDateString, formatRelativeDate, getTodayString, parseDateString } from '@/lib/utils/date';
 import { htmlToPlainText } from '@/utils/html';
-import { colors, fonts, radii, shadows, spacing } from '@/lib/theme';
+import { fonts, radii, shadows, spacing, ThemeColors } from '@/lib/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface HistoryCardProps {
   entry: JournalEntry;
@@ -13,6 +14,9 @@ interface HistoryCardProps {
 }
 
 export function HistoryCard({ entry, onPress, showDate = true }: HistoryCardProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const formatDate = (dateString: string) => {
     return formatDateString(dateString, {
       year: 'numeric',
@@ -66,7 +70,7 @@ export function HistoryCard({ entry, onPress, showDate = true }: HistoryCardProp
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,

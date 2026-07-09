@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { JournalEntry } from '@/lib/database/schema';
 import { formatDateString, getTodayString } from '@/lib/utils/date';
-import { colors, fonts, radii, shadows, spacing } from '@/lib/theme';
+import { fonts, radii, shadows, spacing, ThemeColors } from '@/lib/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface CalendarGridProps {
   year: number;
@@ -14,6 +15,8 @@ interface CalendarGridProps {
 }
 
 export function CalendarGrid({ year, month, entries, selectedDate, onDateSelect }: CalendarGridProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { width: screenWidth } = useWindowDimensions();
   const cellSize = (screenWidth - 80) / 7; // 24px margin + 16px padding on each side
   
@@ -103,7 +106,7 @@ export function CalendarGrid({ year, month, entries, selectedDate, onDateSelect 
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     backgroundColor: colors.surface,
     borderRadius: radii.xl,

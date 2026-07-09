@@ -12,11 +12,14 @@ import { DatabaseService } from '@/services/database';
 import type { JournalEntry } from '@/lib/database/schema';
 import { calculateStreak, getTodayString, formatDateString } from '@/lib/utils/date';
 import { htmlToPlainText } from '@/utils/html';
-import { colors, fonts, radii, shadows, spacing } from '@/lib/theme';
+import { fonts, radii, shadows, spacing, ThemeColors } from '@/lib/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 const SEARCH_DEBOUNCE_MS = 200;
 
 export default function HistoryScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [historyEntries, setHistoryEntries] = useState<JournalEntry[]>([]);
@@ -267,7 +270,7 @@ export default function HistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

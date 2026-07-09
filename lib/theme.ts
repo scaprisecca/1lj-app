@@ -6,12 +6,53 @@
  * repeating shadow blocks.
  */
 
-export const colors = {
+export interface ThemeColors {
+  // Brand
+  primary: string;
+  primaryDark: string;
+  gradient: [string, string];
+  backgroundGradient: [string, string];
+
+  // Surfaces
+  background: string;
+  surface: string;
+  white: string;
+  black: string;
+
+  // Text
+  text: string;
+  textBody: string;
+  textSecondary: string;
+  textMuted: string;
+  textOnDark: string;
+
+  // Borders / dividers / disabled
+  border: string;
+  borderLight: string;
+  disabled: string;
+
+  // Tints
+  indigoTint: string;
+  blueTint: string;
+
+  // Semantic
+  success: string;
+  successTint: string;
+
+  warning: string;
+  warningTint: string;
+  warningBorder: string;
+  warningText: string;
+
+  danger: string;
+}
+
+export const lightColors: ThemeColors = {
   // Brand
   primary: '#6366F1',
   primaryDark: '#8B5CF6',
-  gradient: ['#6366F1', '#8B5CF6'] as [string, string],
-  backgroundGradient: ['#F8FAFC', '#F1F5F9'] as [string, string],
+  gradient: ['#6366F1', '#8B5CF6'],
+  backgroundGradient: ['#F8FAFC', '#F1F5F9'],
 
   // Surfaces
   background: '#F8FAFC',
@@ -45,7 +86,51 @@ export const colors = {
   warningText: '#92400E',
 
   danger: '#EF4444',
-} as const;
+};
+
+export const darkColors: ThemeColors = {
+  // Brand — keep the indigo/violet gradient consistent across themes
+  primary: '#818CF8',
+  primaryDark: '#A78BFA',
+  gradient: ['#6366F1', '#8B5CF6'],
+  backgroundGradient: ['#0F172A', '#1E293B'],
+
+  // Surfaces
+  background: '#0F172A',
+  surface: '#1E293B',
+  white: '#FFFFFF',
+  black: '#000000',
+
+  // Text
+  text: '#F1F5F9',
+  textBody: '#E2E8F0',
+  textSecondary: '#94A3B8',
+  textMuted: '#64748B',
+  textOnDark: '#FFFFFF',
+
+  // Borders / dividers / disabled
+  border: '#334155',
+  borderLight: '#1E293B',
+  disabled: '#475569',
+
+  // Tints
+  indigoTint: '#1E1B4B',
+  blueTint: '#1E2A45',
+
+  // Semantic
+  success: '#34D399',
+  successTint: '#064E3B',
+
+  warning: '#FBBF24',
+  warningTint: '#78350F',
+  warningBorder: '#92400E',
+  warningText: '#FDE68A',
+
+  danger: '#F87171',
+};
+
+/** Default export kept for any not-yet-themed call sites; prefer useTheme(). */
+export const colors = lightColors;
 
 export const fonts = {
   regular: 'Inter-Regular',

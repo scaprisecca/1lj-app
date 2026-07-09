@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, FlatList, PanResponder } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,7 +12,8 @@ import { EmptyState } from '@/components/atoms/EmptyState';
 import { DatabaseService } from '@/services/database';
 import type { JournalEntry } from '@/lib/database/schema';
 import { formatDateString } from '@/lib/utils/date';
-import { colors, fonts, radii, shadows, spacing } from '@/lib/theme';
+import { fonts, radii, shadows, spacing, ThemeColors } from '@/lib/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 const MONTH_LABELS = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -23,6 +24,8 @@ const SWIPE_DISTANCE_THRESHOLD = 60;
 const SWIPE_DIRECTION_RATIO = 2;
 
 export default function CalendarScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [entries, setEntries] = useState<JournalEntry[]>([]);
@@ -358,7 +361,7 @@ export default function CalendarScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

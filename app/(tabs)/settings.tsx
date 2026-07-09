@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   Download,
@@ -31,9 +31,12 @@ import { TaskManagerService } from '@/services/task-manager';
 import { useBackgroundTaskPermissions } from '@/hooks/useBackgroundTaskPermissions';
 import { useToast } from '@/components/atoms/Toast';
 import { LoadingSpinner } from '@/components/atoms/LoadingSpinner';
-import { colors, fonts, radii, shadows, spacing } from '@/lib/theme';
+import { fonts, radii, shadows, spacing, ThemeColors } from '@/lib/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 export default function SettingsScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [settings, setSettings] = useState<AppSettings>({
     characterLimit: 280,
     backupDestination: null,
@@ -519,7 +522,7 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

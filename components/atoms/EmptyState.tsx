@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { colors, fonts, radii, spacing } from '@/lib/theme';
+import { fonts, radii, spacing, ThemeColors } from '@/lib/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface EmptyStateProps {
   icon: React.ReactNode;
@@ -11,6 +12,9 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({ icon, title, subtitle, actionLabel, onAction }: EmptyStateProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.container}>
       <View style={styles.iconContainer}>{icon}</View>
@@ -30,7 +34,7 @@ export function EmptyState({ icon, title, subtitle, actionLabel, onAction }: Emp
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     alignItems: 'center',
     paddingVertical: spacing.huge,

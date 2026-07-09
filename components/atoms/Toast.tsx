@@ -1,6 +1,7 @@
-import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text } from 'react-native';
-import { colors, fonts, radii, shadows, spacing } from '@/lib/theme';
+import { fonts, radii, shadows, spacing, ThemeColors } from '@/lib/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface ToastContextValue {
   showToast: (message: string) => void;
@@ -12,6 +13,8 @@ const VISIBLE_DURATION = 2000;
 const ANIMATION_DURATION = 200;
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [message, setMessage] = useState<string | null>(null);
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(16)).current;
@@ -64,7 +67,7 @@ export function useToast(): ToastContextValue {
   return context;
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     position: 'absolute',
     left: spacing.xxl,

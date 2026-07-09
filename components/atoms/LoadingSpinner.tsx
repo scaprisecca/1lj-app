@@ -1,21 +1,24 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import Animated, { 
-  useAnimatedStyle, 
-  useSharedValue, 
-  withRepeat, 
-  withTiming, 
-  interpolate 
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+  interpolate
 } from 'react-native-reanimated';
 import { useEffect } from 'react';
-import { colors, radii } from '@/lib/theme';
+import { radii } from '@/lib/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface LoadingSpinnerProps {
   size?: number;
   color?: string;
 }
 
-export function LoadingSpinner({ size = 24, color = colors.primary }: LoadingSpinnerProps) {
+export function LoadingSpinner({ size = 24, color }: LoadingSpinnerProps) {
+  const { colors } = useTheme();
+  const spinnerColor = color ?? colors.primary;
   const rotation = useSharedValue(0);
 
   useEffect(() => {
@@ -36,8 +39,8 @@ export function LoadingSpinner({ size = 24, color = colors.primary }: LoadingSpi
     <View style={styles.container}>
       <Animated.View 
         style={[
-          styles.spinner, 
-          { width: size, height: size, borderColor: color },
+          styles.spinner,
+          { width: size, height: size, borderColor: spinnerColor },
           animatedStyle
         ]} 
       />

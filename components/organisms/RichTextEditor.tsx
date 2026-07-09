@@ -1,9 +1,10 @@
-import React, { useRef, useImperativeHandle, forwardRef, useState, useEffect } from 'react';
+import React, { useRef, useImperativeHandle, forwardRef, useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet, Platform, Text, TouchableOpacity, ViewStyle } from 'react-native';
 import { RichEditor, RichToolbar, actions } from 'react-native-pell-rich-editor';
 import { countHtmlCharacters, isHtmlEmpty } from '@/utils/html';
 import { Save } from 'lucide-react-native';
-import { colors, fonts, radii, shadows, spacing } from '@/lib/theme';
+import { fonts, radii, shadows, spacing, ThemeColors } from '@/lib/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface RichTextEditorProps {
   value?: string;
@@ -48,6 +49,9 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
     editorRef,
     showToolbar = true,
   }, ref) => {
+    const { colors } = useTheme();
+    const styles = useMemo(() => createStyles(colors), [colors]);
+    const editorStyle = useMemo(() => createEditorStyle(colors), [colors]);
     const internalRef = useRef<RichEditor>(null);
     const richTextRef = editorRef ?? internalRef;
     const [characterCount, setCharacterCount] = useState(0);
@@ -206,17 +210,19 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
   }
 );
 
-const editorStyle = {
+const createEditorStyle = (colors: ThemeColors) => ({
   backgroundColor: 'transparent',
   color: colors.text,
+  placeholderColor: colors.textMuted,
+  caretColor: colors.primary,
   fontSize: '16px',
   fontFamily: Platform.OS === 'ios' ? 'Inter' : fonts.regular,
   lineHeight: '24px',
   padding: '16px',
   minHeight: '200px',
-};
+});
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     backgroundColor: colors.surface,
     borderRadius: radii.xl,

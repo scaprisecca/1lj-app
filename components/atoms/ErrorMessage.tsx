@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { AlertCircle, RefreshCw } from 'lucide-react-native';
-import { colors, fonts, radii, spacing } from '@/lib/theme';
+import { fonts, radii, spacing, ThemeColors } from '@/lib/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 interface ErrorMessageProps {
   message: string;
@@ -10,6 +11,9 @@ interface ErrorMessageProps {
 }
 
 export function ErrorMessage({ message, onRetry, showRetry = true }: ErrorMessageProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.container}>
       <AlertCircle size={48} color={colors.danger} style={styles.icon} />
@@ -29,7 +33,7 @@ export function ErrorMessage({ message, onRetry, showRetry = true }: ErrorMessag
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',

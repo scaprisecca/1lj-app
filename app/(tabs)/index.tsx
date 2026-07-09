@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, Platform, ActivityIndicator, KeyboardAvoidingView, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'expo-router';
 import { Save, Heart, AlertTriangle, CheckCircle2, Clock, ChevronRight } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,11 +18,14 @@ import { LoadingSpinner } from '@/components/atoms/LoadingSpinner';
 import { SettingsService } from '@/services/settings';
 import type { JournalEntry } from '@/lib/database/schema';
 import { getTodayString, formatDateString } from '@/lib/utils/date';
-import { colors, fonts, radii, shadows, spacing } from '@/lib/theme';
+import { fonts, radii, shadows, spacing, ThemeColors } from '@/lib/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 const PREVIEW_MAX_HEIGHT = 120;
 
 export default function TodayScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [entry, setEntry] = useState<string>('');
   const [todayEntry, setTodayEntry] = useState<JournalEntry | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -265,7 +268,7 @@ export default function TodayScreen() {
                   baseStyle={styles.previewHtml}
                 />
                 <LinearGradient
-                  colors={['transparent', colors.white]}
+                  colors={['transparent', colors.surface]}
                   style={styles.previewFade}
                   pointerEvents="none"
                 />
@@ -353,7 +356,7 @@ export default function TodayScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useNavigation, usePreventRemove } from '@react-navigation/native';
 import { ArrowLeft, Edit3, Save, Trash2 } from 'lucide-react-native';
@@ -19,9 +19,12 @@ import { useWindowDimensions } from 'react-native';
 import { showErrorAlert, logError } from '@/utils/errorHandling';
 import type { JournalEntry } from '@/lib/database/schema';
 import { formatDateString } from '@/lib/utils/date';
-import { colors, fonts, radii, shadows, spacing } from '@/lib/theme';
+import { fonts, radii, shadows, spacing, ThemeColors } from '@/lib/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 export default function EntryDetailScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { date } = useLocalSearchParams<{ date: string }>();
   const router = useRouter();
   const navigation = useNavigation();
@@ -373,7 +376,7 @@ export default function EntryDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

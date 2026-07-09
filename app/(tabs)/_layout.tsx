@@ -1,15 +1,18 @@
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
 import { Edit3, Calendar, Clock, Settings } from 'lucide-react-native';
-import { colors, fonts, spacing } from '@/lib/theme';
+import { fonts, spacing } from '@/lib/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 export default function TabLayout() {
+  const { colors } = useTheme();
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: colors.white,
+          backgroundColor: colors.surface,
           borderTopWidth: 1,
           borderTopColor: colors.borderLight,
           paddingTop: spacing.sm,
