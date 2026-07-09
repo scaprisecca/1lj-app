@@ -15,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import {
   Settings as SettingsIcon,
   Download,
+  Upload,
   FolderOpen,
   Clock,
   Type,
@@ -41,6 +42,7 @@ export default function SettingsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const [isUpdatingFrequency, setIsUpdatingFrequency] = useState(false);
   const [characterLimitInput, setCharacterLimitInput] = useState('280');
   const backgroundPermissions = useBackgroundTaskPermissions();
@@ -207,6 +209,70 @@ export default function SettingsScreen() {
       Alert.alert('Export Failed', 'Failed to export your journal entries.');
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleRestore = () => {
+    Alert.alert(
+      'Restore Backup',
+      'Select a backup file to restore your journal entries. Existing entries won\'t be overwritten.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Choose File', onPress: selectRestoreFile }
+      ]
+    );
+  };
+
+  const selectRestoreFile = async () => {
+    try {
+      if (Platform.OS === 'web') {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (event) => {
+          const file = (event.target as HTMLInputElement).files?.[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const content = e.target?.result as string;
+              processRestoreFile(content);
+            };
+            reader.readAsText(file);
+          }
+        };
+        input.click();
+      } else {
+        const result = await DocumentPicker.getDocumentAsync({
+          type: 'application/json',
+          copyToCacheDirectory: true
+        });
+
+        if (!result.canceled && result.assets[0]) {
+          const fileContent = await FileSystem.readAsStringAsync(result.assets[0].uri);
+          processRestoreFile(fileContent);
+        }
+      }
+    } catch (error) {
+      console.error('Error selecting restore file:', error);
+      Alert.alert('Error', 'Failed to select restore file');
+    }
+  };
+
+  const processRestoreFile = async (content: string) => {
+    try {
+      setIsRestoring(true);
+      await BackupService.restoreFromBackup(content);
+
+      if (Platform.OS !== 'web') {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+
+      showToast('Backup restored successfully');
+    } catch (error) {
+      console.error('Error restoring backup:', error);
+      Alert.alert('Error', 'Failed to restore backup. Please check the file format.');
+    } finally {
+      setIsRestoring(false);
     }
   };
 
@@ -405,6 +471,31 @@ export default function SettingsScreen() {
               </Text>
             </LinearGradient>
           </TouchableOpacity>
+
+          {/* Restore from Backup */}
+          <TouchableOpacity
+            style={[styles.settingCard, isRestoring && styles.settingCardDisabled]}
+            onPress={handleRestore}
+            disabled={isRestoring}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingRow}>
+              <View style={styles.settingIconContainer}>
+                <Upload size={20} color="#6366F1" />
+              </View>
+              <View style={styles.settingContent}>
+                <Text style={styles.settingLabel}>Restore from Backup</Text>
+                <Text style={styles.settingDescription}>
+                  Import entries from a backup file
+                </Text>
+              </View>
+              {isRestoring ? (
+                <ActivityIndicator size="small" color="#6366F1" />
+              ) : (
+                <ChevronRight size={20} color="#94A3B8" />
+              )}
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* App Info */}
@@ -467,6 +558,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
+  },
+  settingCardDisabled: {
+    opacity: 0.6,
   },
   settingRow: {
     flexDirection: 'row',
