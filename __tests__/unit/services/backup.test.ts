@@ -224,6 +224,60 @@ describe('BackupService', () => {
       expect(result).toContain('.json'); // Falls back to uncompressed
     });
 
+    it('should compress with a password even when the compress setting is off', async () => {
+      // backupCompress is false in the default beforeEach settings - a
+      // password must still force encryption, since there's no other way
+      // to encrypt a plaintext JSON backup.
+      const mockEntries = [
+        {
+          id: 1,
+          entry_date: '2024-01-15',
+          html_body: '<p>Test entry</p>',
+          created_at: '2024-01-15T10:00:00Z',
+          updated_at: '2024-01-15T10:00:00Z',
+        },
+      ];
+
+      mockDb.select().from().orderBy.mockResolvedValue(mockEntries);
+      (FileSystem.writeAsStringAsync as jest.Mock).mockResolvedValue(undefined);
+      (FileSystem.getInfoAsync as jest.Mock).mockResolvedValue({ exists: true, size: 512 });
+      (FileSystem.deleteAsync as jest.Mock).mockResolvedValue(undefined);
+      (CompressionService.compressFile as jest.Mock).mockResolvedValue('file://mock-documents/journal-backup.zip');
+
+      const result = await BackupService.createBackup('manual', 'hunter2');
+
+      expect(CompressionService.compressFile).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        'hunter2'
+      );
+      expect(result).toContain('.zip');
+    });
+
+    it('should not fall back to a plaintext backup when a password is set and compression fails', async () => {
+      const mockEntries = [
+        {
+          id: 1,
+          entry_date: '2024-01-15',
+          html_body: '<p>Test entry</p>',
+          created_at: '2024-01-15T10:00:00Z',
+          updated_at: '2024-01-15T10:00:00Z',
+        },
+      ];
+
+      mockDb.select().from().orderBy.mockResolvedValue(mockEntries);
+      (FileSystem.writeAsStringAsync as jest.Mock).mockResolvedValue(undefined);
+      (FileSystem.deleteAsync as jest.Mock).mockResolvedValue(undefined);
+      (CompressionService.compressFile as jest.Mock).mockRejectedValue(new Error('Compression failed'));
+
+      await expect(BackupService.createBackup('manual', 'hunter2')).rejects.toThrow(
+        'Failed to create backup'
+      );
+
+      // The unencrypted intermediate file must be cleaned up, not left behind or reported as the result.
+      expect(FileSystem.deleteAsync).toHaveBeenCalled();
+    });
+
     it('should throw error when database is not available', async () => {
       mockGetDatabase.mockReturnValue(null);
 
@@ -403,10 +457,43 @@ describe('BackupService', () => {
 
       await BackupService.restoreFromBackup(backupData, true, filePath);
 
-      expect(CompressionService.decompressFile).toHaveBeenCalledWith(filePath);
+      expect(CompressionService.decompressFile).toHaveBeenCalledWith(filePath, undefined, undefined);
       expect(FileSystem.readDirectoryAsync).toHaveBeenCalled();
       expect(FileSystem.readAsStringAsync).toHaveBeenCalled();
       expect(FileSystem.deleteAsync).toHaveBeenCalled(); // Cleanup
+    });
+
+    it('should pass the password through to decompressFile for encrypted backups', async () => {
+      const backupData = JSON.stringify({
+        version: '1.0.0',
+        entries: [
+          {
+            entry_date: '2024-01-15',
+            html_body: '<p>Entry 1</p>',
+          },
+        ],
+      });
+
+      const filePath = 'file://mock-documents/backup.zip';
+      (CompressionService.decompressFile as jest.Mock).mockResolvedValue('file://mock-extracted/');
+      (FileSystem.readDirectoryAsync as jest.Mock).mockResolvedValue(['backup.json']);
+      (FileSystem.readAsStringAsync as jest.Mock).mockResolvedValue(backupData);
+      (FileSystem.deleteAsync as jest.Mock).mockResolvedValue(undefined);
+
+      await BackupService.restoreFromBackup('', true, filePath, 'hunter2');
+
+      expect(CompressionService.decompressFile).toHaveBeenCalledWith(filePath, undefined, 'hunter2');
+    });
+
+    it('should surface a clear message when the restore password is wrong', async () => {
+      const filePath = 'file://mock-documents/backup.zip';
+      (CompressionService.decompressFile as jest.Mock).mockRejectedValue(
+        new Error('Invalid password')
+      );
+
+      await expect(
+        BackupService.restoreFromBackup('', true, filePath, 'wrong-password')
+      ).rejects.toThrow('Incorrect password. Please try again.');
     });
 
     it('should throw error if compressed backup has no JSON file', async () => {

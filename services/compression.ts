@@ -1,5 +1,5 @@
 import * as FileSystem from 'expo-file-system/legacy';
-import { zip, unzip } from 'react-native-zip-archive';
+import { zip, unzip, zipWithPassword, unzipWithPassword, isPasswordProtected } from 'react-native-zip-archive';
 import { Platform } from 'react-native';
 
 /**
@@ -11,9 +11,10 @@ export class CompressionService {
    * Compress a file using ZIP format
    * @param sourceFile - Path to the source file to compress
    * @param outputFile - Path where the compressed file should be saved (optional)
+   * @param password - Optional password; when provided the archive is AES-256 encrypted
    * @returns Path to the compressed file
    */
-  static async compressFile(sourceFile: string, outputFile?: string): Promise<string> {
+  static async compressFile(sourceFile: string, outputFile?: string, password?: string): Promise<string> {
     try {
       if (Platform.OS === 'web') {
         console.log('[Compression] Compression not supported on web, returning original file');
@@ -49,7 +50,11 @@ export class CompressionService {
       });
 
       // Compress the temp directory
-      await zip(tempDir, outputFile);
+      if (password) {
+        await zipWithPassword(tempDir, outputFile, password, 'AES-256');
+      } else {
+        await zip(tempDir, outputFile);
+      }
 
       // Clean up temp directory
       await FileSystem.deleteAsync(tempDir, { idempotent: true });
@@ -73,9 +78,10 @@ export class CompressionService {
    * Decompress a ZIP file
    * @param zipFile - Path to the ZIP file to decompress
    * @param outputDir - Directory where the contents should be extracted (optional)
+   * @param password - Password required if the archive is encrypted
    * @returns Path to the extracted directory
    */
-  static async decompressFile(zipFile: string, outputDir?: string): Promise<string> {
+  static async decompressFile(zipFile: string, outputDir?: string, password?: string): Promise<string> {
     try {
       if (Platform.OS === 'web') {
         console.log('[Compression] Decompression not supported on web');
@@ -94,7 +100,11 @@ export class CompressionService {
       await FileSystem.makeDirectoryAsync(outputDir, { intermediates: true });
 
       // Decompress the file
-      await unzip(zipFile, outputDir);
+      if (password) {
+        await unzipWithPassword(zipFile, outputDir, password);
+      } else {
+        await unzip(zipFile, outputDir);
+      }
 
       console.log('[Compression] Decompression complete');
 
@@ -112,6 +122,21 @@ export class CompressionService {
    */
   static isCompressed(filePath: string): boolean {
     return filePath.toLowerCase().endsWith('.zip');
+  }
+
+  /**
+   * Check if a ZIP file is password-protected
+   * @param filePath - Path to the ZIP file
+   * @returns True if the archive requires a password to extract
+   */
+  static async isPasswordProtected(filePath: string): Promise<boolean> {
+    if (Platform.OS === 'web') return false;
+    try {
+      return await isPasswordProtected(filePath);
+    } catch (error) {
+      console.error('[Compression] Failed to check password protection:', error);
+      return false;
+    }
   }
 
   /**

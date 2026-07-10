@@ -22,6 +22,13 @@ describe('htmlToPlainText', () => {
       .toBe('<tag> & "quote"');
   });
 
+  it('should not double-decode &amp; into a live angle bracket', () => {
+    // &amp;lt; is a literally-escaped "&lt;" - decoding &amp; before &lt;
+    // would turn it into a real '<', smuggling markup past the "plain text"
+    // boundary. Decoding &amp; last keeps it as the literal text "&lt;".
+    expect(htmlToPlainText('&amp;lt;script&amp;gt;')).toBe('&lt;script&gt;');
+  });
+
   it('should handle empty string', () => {
     expect(htmlToPlainText('')).toBe('');
   });

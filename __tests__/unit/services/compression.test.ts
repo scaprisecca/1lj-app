@@ -1,6 +1,6 @@
 import { CompressionService } from '@/services/compression';
 import * as FileSystem from 'expo-file-system/legacy';
-import { zip, unzip } from 'react-native-zip-archive';
+import { zip, unzip, zipWithPassword, unzipWithPassword, isPasswordProtected } from 'react-native-zip-archive';
 import { Platform } from 'react-native';
 
 // Mock dependencies
@@ -110,6 +110,25 @@ describe('CompressionService', () => {
         'Failed to compress backup file'
       );
     });
+
+    it('should use zipWithPassword and skip plain zip when a password is given', async () => {
+      const sourceFile = '/path/to/backup.json';
+      const outputFile = '/path/to/backup.zip';
+
+      (FileSystem.getInfoAsync as jest.Mock)
+        .mockResolvedValueOnce({ exists: true, size: 1024 })
+        .mockResolvedValueOnce({ exists: true, size: 512 });
+      (FileSystem.makeDirectoryAsync as jest.Mock).mockResolvedValue(undefined);
+      (FileSystem.copyAsync as jest.Mock).mockResolvedValue(undefined);
+      (FileSystem.deleteAsync as jest.Mock).mockResolvedValue(undefined);
+      (zipWithPassword as jest.Mock).mockResolvedValue(undefined);
+
+      const result = await CompressionService.compressFile(sourceFile, outputFile, 'secret');
+
+      expect(result).toBe(outputFile);
+      expect(zipWithPassword).toHaveBeenCalledWith(expect.any(String), outputFile, 'secret', 'AES-256');
+      expect(zip).not.toHaveBeenCalled();
+    });
   });
 
   describe('decompressFile', () => {
@@ -162,6 +181,51 @@ describe('CompressionService', () => {
       await expect(CompressionService.decompressFile(zipFile)).rejects.toThrow(
         'Failed to decompress backup file'
       );
+    });
+
+    it('should use unzipWithPassword and skip plain unzip when a password is given', async () => {
+      const zipFile = '/path/to/backup.zip';
+      const outputDir = '/path/to/extracted/';
+
+      (FileSystem.makeDirectoryAsync as jest.Mock).mockResolvedValue(undefined);
+      (unzipWithPassword as jest.Mock).mockResolvedValue(undefined);
+
+      const result = await CompressionService.decompressFile(zipFile, outputDir, 'secret');
+
+      expect(result).toBe(outputDir);
+      expect(unzipWithPassword).toHaveBeenCalledWith(zipFile, outputDir, 'secret');
+      expect(unzip).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('isPasswordProtected', () => {
+    it('should return true when the archive is password-protected', async () => {
+      (isPasswordProtected as jest.Mock).mockResolvedValue(true);
+
+      const result = await CompressionService.isPasswordProtected('/path/to/backup.zip');
+
+      expect(result).toBe(true);
+      expect(isPasswordProtected).toHaveBeenCalledWith('/path/to/backup.zip');
+    });
+
+    it('should return false when the check fails', async () => {
+      (isPasswordProtected as jest.Mock).mockRejectedValue(new Error('boom'));
+
+      const result = await CompressionService.isPasswordProtected('/path/to/backup.zip');
+
+      expect(result).toBe(false);
+    });
+
+    it('should return false on web without calling the native module', async () => {
+      Object.defineProperty(Platform, 'OS', {
+        writable: true,
+        value: 'web',
+      });
+
+      const result = await CompressionService.isPasswordProtected('/path/to/backup.zip');
+
+      expect(result).toBe(false);
+      expect(isPasswordProtected).not.toHaveBeenCalled();
     });
   });
 

@@ -16,13 +16,14 @@ export function htmlToPlainText(html: string): string {
   return html
     // Remove HTML tags
     .replace(/<[^>]*>/g, '')
-    // Decode common HTML entities
+    // Decode common HTML entities. &amp; must be decoded last, otherwise an
+    // encoded entity like &amp;lt; would double-decode into a live '<'.
     .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
     // Remove extra whitespace and normalize line breaks
     .replace(/\s+/g, ' ')
     .trim();

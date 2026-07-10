@@ -8,6 +8,7 @@ import {
   TextInput,
   Platform,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect, useMemo } from 'react';
@@ -19,6 +20,7 @@ import {
   Type,
   ChevronRight,
   Check,
+  Lock,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -50,6 +52,10 @@ export default function SettingsScreen() {
   const [isRestoring, setIsRestoring] = useState(false);
   const [isUpdatingFrequency, setIsUpdatingFrequency] = useState(false);
   const [characterLimitInput, setCharacterLimitInput] = useState('280');
+  const [exportPassword, setExportPassword] = useState('');
+  const [restorePasswordModalVisible, setRestorePasswordModalVisible] = useState(false);
+  const [restorePassword, setRestorePassword] = useState('');
+  const [pendingRestoreUri, setPendingRestoreUri] = useState<string | null>(null);
   const backgroundPermissions = useBackgroundTaskPermissions();
   const { showToast } = useToast();
 
@@ -163,8 +169,9 @@ export default function SettingsScreen() {
         return;
       }
 
-      // Create backup
-      const backupUri = await BackupService.createBackup();
+      // Create backup - a non-empty password produces an AES-256 encrypted zip
+      const password = exportPassword.trim();
+      const backupUri = await BackupService.createBackup(undefined, password || undefined);
 
       if (backupUri) {
         // Update last backup time
@@ -176,7 +183,11 @@ export default function SettingsScreen() {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
 
-        showToast(`Exported ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`);
+        showToast(
+          password
+            ? `Exported ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} (encrypted)`
+            : `Exported ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`
+        );
       }
     } catch (error) {
       console.error('Error exporting:', error);
@@ -226,7 +237,13 @@ export default function SettingsScreen() {
           if (CompressionService.isCompressed(uri)) {
             // Compressed backups are binary - restoreFromBackup decompresses
             // the file itself, so pass the path rather than reading it as text.
-            processRestoreFile('', true, uri);
+            if (await CompressionService.isPasswordProtected(uri)) {
+              setPendingRestoreUri(uri);
+              setRestorePassword('');
+              setRestorePasswordModalVisible(true);
+            } else {
+              processRestoreFile('', true, uri);
+            }
           } else {
             const fileContent = await FileSystem.readAsStringAsync(uri);
             processRestoreFile(fileContent);
@@ -239,10 +256,15 @@ export default function SettingsScreen() {
     }
   };
 
-  const processRestoreFile = async (content: string, isCompressed: boolean = false, filePath?: string) => {
+  const processRestoreFile = async (
+    content: string,
+    isCompressed: boolean = false,
+    filePath?: string,
+    password?: string
+  ) => {
     try {
       setIsRestoring(true);
-      await BackupService.restoreFromBackup(content, isCompressed, filePath);
+      await BackupService.restoreFromBackup(content, isCompressed, filePath, password);
 
       if (Platform.OS !== 'web') {
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -251,10 +273,32 @@ export default function SettingsScreen() {
       showToast('Backup restored successfully');
     } catch (error) {
       console.error('Error restoring backup:', error);
-      Alert.alert('Error', 'Failed to restore backup. Please check the file format.');
+      const message = error instanceof Error ? error.message : '';
+      Alert.alert(
+        'Error',
+        message === 'Incorrect password. Please try again.'
+          ? message
+          : 'Failed to restore backup. Please check the file format.'
+      );
     } finally {
       setIsRestoring(false);
     }
+  };
+
+  const handleRestorePasswordConfirm = () => {
+    if (!pendingRestoreUri) return;
+    const uri = pendingRestoreUri;
+    const password = restorePassword;
+    setRestorePasswordModalVisible(false);
+    setPendingRestoreUri(null);
+    setRestorePassword('');
+    processRestoreFile('', true, uri, password);
+  };
+
+  const handleRestorePasswordCancel = () => {
+    setRestorePasswordModalVisible(false);
+    setPendingRestoreUri(null);
+    setRestorePassword('');
   };
 
   const getBackupFrequencyLabel = (frequency: AutoBackupFrequency): string => {
@@ -411,6 +455,34 @@ export default function SettingsScreen() {
             )}
           </View>
 
+          {/* Export password (optional) */}
+          {Platform.OS !== 'web' && (
+            <View style={styles.settingCard}>
+              <View style={styles.settingRow}>
+                <View style={styles.settingIconContainer}>
+                  <Lock size={20} color={colors.primary} />
+                </View>
+                <View style={styles.settingContent}>
+                  <Text style={styles.settingLabel}>Backup Password</Text>
+                  <Text style={styles.settingDescription}>
+                    Optional - encrypts your export. You'll need this password to restore it.
+                  </Text>
+                </View>
+              </View>
+              <TextInput
+                style={styles.passwordInput}
+                value={exportPassword}
+                onChangeText={setExportPassword}
+                placeholder="Leave blank for no encryption"
+                placeholderTextColor={colors.textMuted}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!isExporting}
+              />
+            </View>
+          )}
+
           {/* Export Now */}
           <TouchableOpacity
             style={[styles.exportButton, isExporting && styles.exportButtonDisabled]}
@@ -473,6 +545,53 @@ export default function SettingsScreen() {
           <Text style={styles.appInfoText}>Made with ❤️ for journaling</Text>
         </View>
       </ScrollView>
+
+      {/* Restore password prompt for encrypted backups */}
+      <Modal
+        visible={restorePasswordModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleRestorePasswordCancel}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Password Required</Text>
+            <Text style={styles.settingDescription}>
+              This backup is encrypted. Enter the password to restore it.
+            </Text>
+            <TextInput
+              style={styles.passwordInput}
+              value={restorePassword}
+              onChangeText={setRestorePassword}
+              placeholder="Password"
+              placeholderTextColor={colors.textMuted}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoFocus
+            />
+            <View style={styles.modalButtonRow}>
+              <TouchableOpacity
+                style={styles.modalButtonCancel}
+                onPress={handleRestorePasswordCancel}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel"
+              >
+                <Text style={styles.modalButtonCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButtonPrimary, !restorePassword && styles.exportButtonDisabled]}
+                onPress={handleRestorePasswordConfirm}
+                disabled={!restorePassword}
+                accessibilityRole="button"
+                accessibilityLabel="Restore"
+              >
+                <Text style={styles.modalButtonPrimaryText}>Restore</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -682,5 +801,65 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontFamily: fonts.regular,
     color: colors.textMuted,
     marginBottom: spacing.xs,
+  },
+  passwordInput: {
+    height: 48,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    fontSize: 16,
+    fontFamily: fonts.medium,
+    color: colors.text,
+    backgroundColor: colors.background,
+    marginTop: spacing.md,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.xl,
+    ...shadows.compact,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: fonts.semiBold,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  modalButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+  },
+  modalButtonCancel: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
+  },
+  modalButtonCancelText: {
+    fontSize: 15,
+    fontFamily: fonts.medium,
+    color: colors.textSecondary,
+  },
+  modalButtonPrimary: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
+    backgroundColor: colors.primary,
+  },
+  modalButtonPrimaryText: {
+    fontSize: 15,
+    fontFamily: fonts.medium,
+    color: colors.white,
   },
 });

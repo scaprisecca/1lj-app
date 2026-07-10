@@ -70,7 +70,7 @@ export class BackupService {
     };
   }
 
-  static async createBackup(type: 'manual' | 'automatic' = 'automatic'): Promise<string> {
+  static async createBackup(type: 'manual' | 'automatic' = 'automatic', password?: string): Promise<string> {
     try {
       if (isUsingMock()) {
         // Mock implementation - just show alert
@@ -128,13 +128,18 @@ export class BackupService {
         let fileUri = `${FileSystem.documentDirectory}${jsonFilename}`;
         await FileSystem.writeAsStringAsync(fileUri, backupJson);
 
-        // Compress the backup if enabled
-        if (backupSettings.compress) {
+        // A password only encrypts anything if the backup is zipped, so a
+        // password request implies compression regardless of the user's
+        // compress setting.
+        const shouldCompress = backupSettings.compress || !!password;
+
+        if (shouldCompress) {
           try {
             console.log('[Backup] Compressing backup...');
             const compressedUri = await CompressionService.compressFile(
               fileUri,
-              `${FileSystem.documentDirectory}${compressedFilename}`
+              `${FileSystem.documentDirectory}${compressedFilename}`,
+              password
             );
 
             // Get compressed file size
@@ -148,7 +153,14 @@ export class BackupService {
             fileUri = compressedUri;
             console.log(`[Backup] Backup compressed successfully: ${CompressionService.formatFileSize(finalSize)}`);
           } catch (compressionError) {
-            console.error('[Backup] Compression failed, using uncompressed backup:', compressionError);
+            console.error('[Backup] Compression failed:', compressionError);
+            if (password) {
+              // Never fall back to a plaintext export when the user asked
+              // for password protection - that would silently produce an
+              // unencrypted file instead of the encrypted one they expect.
+              await FileSystem.deleteAsync(fileUri, { idempotent: true });
+              throw new Error('Failed to create password-protected backup');
+            }
             // Continue with uncompressed backup
           }
         }
@@ -156,7 +168,7 @@ export class BackupService {
         file_uri = fileUri;
 
         // Handle backup based on user preferences
-        const mimeType = backupSettings.compress ? 'application/zip' : 'application/json';
+        const mimeType = shouldCompress ? 'application/zip' : 'application/json';
 
         if (backupSettings.location === 'share') {
           if (Sharing && await Sharing.isAvailableAsync()) {
@@ -264,7 +276,7 @@ export class BackupService {
     }
   }
   
-  static async restoreFromBackup(backupData: string, isCompressed: boolean = false, filePath?: string): Promise<void> {
+  static async restoreFromBackup(backupData: string, isCompressed: boolean = false, filePath?: string, password?: string): Promise<void> {
     try {
       if (isUsingMock()) {
         // Mock implementation - just show console message
@@ -281,7 +293,7 @@ export class BackupService {
       // Handle compressed backups
       if (isCompressed && filePath) {
         console.log('[Backup] Decompressing backup file...');
-        const extractedDir = await CompressionService.decompressFile(filePath);
+        const extractedDir = await CompressionService.decompressFile(filePath, undefined, password);
 
         // Read the extracted JSON file (assuming it's named backup.json in the archive)
         const jsonFiles = await FileSystem.readDirectoryAsync(extractedDir);
@@ -355,6 +367,10 @@ export class BackupService {
       
     } catch (error) {
       console.error('Error restoring backup:', error);
+      const message = error instanceof Error ? error.message : '';
+      if (/password/i.test(message)) {
+        throw new Error('Incorrect password. Please try again.');
+      }
       throw new Error('Failed to restore from backup');
     }
   }

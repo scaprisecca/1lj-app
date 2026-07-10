@@ -58,6 +58,12 @@ describe('WidgetService', () => {
       expect(result).toBe('Test & <>"');
     });
 
+    it('should not double-decode &amp; into a live angle bracket', () => {
+      const html = '&amp;lt;script&amp;gt;';
+      const result = WidgetService.htmlToPlainText(html);
+      expect(result).toBe('&lt;script&gt;');
+    });
+
     it('should trim whitespace from result', () => {
       const html = '   <p>Text with spaces</p>   ';
       const result = WidgetService.htmlToPlainText(html);

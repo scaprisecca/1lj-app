@@ -117,6 +117,9 @@ jest.mock('expo-document-picker', () => ({
 jest.mock('react-native-zip-archive', () => ({
   zip: jest.fn().mockResolvedValue('file://mock-zip.zip'),
   unzip: jest.fn().mockResolvedValue('file://mock-unzipped/'),
+  zipWithPassword: jest.fn().mockResolvedValue('file://mock-zip.zip'),
+  unzipWithPassword: jest.fn().mockResolvedValue('file://mock-unzipped/'),
+  isPasswordProtected: jest.fn().mockResolvedValue(false),
 }));
 
 // Mock widget manager
