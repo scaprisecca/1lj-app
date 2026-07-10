@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
@@ -50,8 +51,14 @@ export default function RootLayout() {
       .catch((error) => {
         console.error('Database initialization failed:', error);
         setDatabaseError(error.message);
-        // For development purposes, we'll continue without database
-        setDatabaseReady(true);
+        // In dev, continue without a database (mock mode already handled
+        // this in initializeDatabase). In production, initializeDatabase
+        // rethrows instead of falling back to mock, so reaching this branch
+        // there means storage is genuinely unavailable — do not set
+        // databaseReady, so the blocking error screen renders instead.
+        if (__DEV__) {
+          setDatabaseReady(true);
+        }
       });
   }, []);
 
@@ -77,20 +84,34 @@ export default function RootLayout() {
   }, [databaseReady]);
 
   useEffect(() => {
-    if ((fontsLoaded || fontError) && databaseReady) {
+    if ((fontsLoaded || fontError) && (databaseReady || databaseError)) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError, databaseReady]);
+  }, [fontsLoaded, fontError, databaseReady, databaseError]);
 
   if (!fontsLoaded && !fontError) {
     return null;
   }
 
-  if (!databaseReady) {
+  if (!databaseReady && !databaseError) {
     return null;
   }
 
-  // Show warning for database issues but continue to app
+  // Production init/migration failure with no mock fallback: storage is
+  // genuinely unavailable, so block the app instead of pretending saves work.
+  if (databaseError && !databaseReady) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorTitle}>Storage unavailable</Text>
+        <Text style={styles.errorMessage}>
+          Your journal entries can&apos;t be saved right now. Please restart the app.
+          If this keeps happening, reinstalling may help.
+        </Text>
+      </View>
+    );
+  }
+
+  // Show warning for database issues but continue to app (dev only)
   if (databaseError) {
     console.warn('App running without database:', databaseError);
   }
@@ -105,3 +126,26 @@ export default function RootLayout() {
     </ToastProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    backgroundColor: '#1a1a1a',
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  errorMessage: {
+    fontSize: 15,
+    color: '#ccc',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+});

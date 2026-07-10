@@ -55,9 +55,10 @@ Follows Atomic Design principles:
 - `@/*` maps to project root (e.g., `@/lib/database/client`)
 
 ### Key Technologies
-- **React Native**: 0.79.1 with React 19
-- **Expo SDK**: 53.0.0 with new architecture enabled
+- **React Native**: 0.81.4 with React 19
+- **Expo SDK**: 54 with new architecture enabled
 - **Database**: Drizzle ORM + expo-sqlite
+- **File System**: `expo-file-system` on SDK 54 defaults to a new object-oriented API (`File`/`Directory`/`Paths`). This codebase uses the legacy functional API (`documentDirectory`, `writeAsStringAsync`, etc.), so it must be imported from the `expo-file-system/legacy` subpath, not the package root.
 - **Rich Text**: react-native-pell-rich-editor
 - **Icons**: lucide-react-native
 - **Fonts**: Inter (loaded via @expo-google-fonts/inter)

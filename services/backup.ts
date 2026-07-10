@@ -1,7 +1,7 @@
 import { getDatabase, isUsingMock } from '@/lib/database/client';
 import { backupLogs, journalEntries, type BackupLog, type NewBackupLog } from '@/lib/database/schema';
 import { desc, sql } from 'drizzle-orm';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CompressionService } from './compression';

@@ -1,5 +1,6 @@
 import * as schema from './schema';
 import { Platform } from 'react-native';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 
 // Initialize database connection
 let db: any = null;
@@ -27,10 +28,20 @@ export async function initializeDatabase() {
     console.log('✅ SQLite database initialized');
     return db;
   } catch (error) {
-    console.warn('⚠️ SQLite unavailable (Expo Go?), falling back to mock:', error);
-    isUsingMockDatabase = true;
-    db = null;
-    return null;
+    // Mock fallback is only acceptable in dev / Expo Go, where real SQLite
+    // isn't available. In a production build this must surface as a hard
+    // failure — silently switching to mock data means the user's entries
+    // are never persisted.
+    const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+    if (__DEV__ || isExpoGo) {
+      console.warn('⚠️ SQLite unavailable (Expo Go?), falling back to mock:', error);
+      isUsingMockDatabase = true;
+      db = null;
+      return null;
+    }
+
+    console.error('❌ SQLite unavailable in production build:', error);
+    throw error;
   }
 }
 
@@ -47,10 +58,9 @@ export async function runMigrations() {
 
     // Import migrations
     const migrations = require('../../drizzle/migrations');
-    const { drizzle } = require('drizzle-orm/expo-sqlite');
     const { migrate } = require('drizzle-orm/expo-sqlite/migrator');
 
-    await migrate(drizzle(db), migrations);
+    await migrate(db, migrations);
     console.log('✅ Migrations completed successfully');
   } catch (error) {
     console.error('❌ Migration failed:', error);
