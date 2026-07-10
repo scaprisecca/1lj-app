@@ -166,7 +166,13 @@ export class BackupService {
         size_bytes: finalSize,
         status: 'success',
       });
-      
+
+      // Prune old backup files and log rows so they don't accumulate forever
+      if (Platform.OS !== 'web') {
+        await this.pruneOldBackupFiles();
+      }
+      await this.pruneOldBackupLogs();
+
       return file_uri;
     } catch (error) {
       console.error('Error creating backup:', error);
@@ -188,7 +194,48 @@ export class BackupService {
       throw new Error('Failed to create backup');
     }
   }
-  
+
+  // Keep only the newest N backup files in the documents directory
+  private static async pruneOldBackupFiles(maxFiles: number = 5): Promise<void> {
+    try {
+      const dir = FileSystem.documentDirectory;
+      if (!dir) return;
+
+      const files = await FileSystem.readDirectoryAsync(dir);
+      const backupFiles = files
+        .filter((f) => f.startsWith('journal-backup-'))
+        .sort(); // timestamps in the filename sort lexicographically (oldest first)
+
+      const filesToDelete = backupFiles.slice(0, Math.max(0, backupFiles.length - maxFiles));
+      for (const file of filesToDelete) {
+        await FileSystem.deleteAsync(`${dir}${file}`, { idempotent: true });
+      }
+    } catch (error) {
+      console.error('Error pruning old backup files:', error);
+      // Don't fail the backup because cleanup failed
+    }
+  }
+
+  // Keep only the newest N backup_logs rows
+  private static async pruneOldBackupLogs(maxRows: number = 50): Promise<void> {
+    try {
+      const db = getDatabase();
+      if (!db) return;
+
+      const rows = await db.select({ id: backupLogs.id })
+        .from(backupLogs)
+        .orderBy(desc(backupLogs.run_time));
+
+      const idsToDelete = rows.slice(maxRows).map((r: { id: number }) => r.id);
+      for (const id of idsToDelete) {
+        await db.delete(backupLogs).where(sql`id = ${id}`);
+      }
+    } catch (error) {
+      console.error('Error pruning old backup logs:', error);
+      // Don't fail the backup because cleanup failed
+    }
+  }
+
   static async getBackupHistory(): Promise<BackupLog[]> {
     try {
       if (isUsingMock()) {
@@ -303,15 +350,17 @@ export class BackupService {
 
       const db = getDatabase();
       // Only auto-backup if there are entries and it's been a while since last backup
-      const lastBackup = await db.select()
+      const lastBackup: BackupLog[] = await db.select()
         .from(backupLogs)
         .where(sql`run_type = 'auto' AND status = 'success'`)
         .orderBy(desc(backupLogs.run_time))
         .limit(1);
-      
+
       const now = new Date();
-      const shouldBackup = !lastBackup[0] || 
-        (now.getTime() - new Date(lastBackup[0].timestamp).getTime()) > 24 * 60 * 60 * 1000; // 24 hours
+      const lastRunTime = lastBackup[0] ? new Date(lastBackup[0].run_time).getTime() : NaN;
+      const shouldBackup = !lastBackup[0] ||
+        Number.isNaN(lastRunTime) ||
+        (now.getTime() - lastRunTime) > 24 * 60 * 60 * 1000; // 24 hours
       
       if (shouldBackup) {
         await this.createBackup('automatic');

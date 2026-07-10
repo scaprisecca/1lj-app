@@ -7,7 +7,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import RenderHtml from 'react-native-render-html';
 import { DatabaseService } from '@/services/database';
-import { BackupService } from '@/services/backup';
 import { WidgetService } from '@/services/widget';
 import { isUsingMock } from '@/lib/database/client';
 import { RichTextEditor, type RichTextEditorRef } from '@/components/organisms/RichTextEditor';
@@ -95,9 +94,6 @@ export default function TodayScreen() {
       const newEntry = await DatabaseService.createEntry(today, combinedContent);
       setTodayEntry(newEntry);
     }
-
-    // Trigger backup (will be mocked if not available)
-    await BackupService.createBackup();
 
     // Update widget data
     await WidgetService.updateWidgetData();

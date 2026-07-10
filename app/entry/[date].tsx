@@ -7,7 +7,6 @@ import { ArrowLeft, Edit3, Save, Trash2 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { DatabaseService } from '@/services/database';
-import { BackupService } from '@/services/backup';
 import { WidgetService } from '@/services/widget';
 import { RichTextEditor, type RichTextEditorRef } from '@/components/organisms/RichTextEditor';
 import { useAutoSave } from '@/hooks/useAutoSave';
@@ -88,11 +87,6 @@ export default function EntryDetailScreen() {
         await DatabaseService.updateEntry(entry.id, content.trim());
         setEntry({ ...entry, html_body: content.trim() });
       }
-
-      // Trigger backup (don't block on errors)
-      BackupService.createBackup().catch((err) => {
-        logError(err, 'EntryDetailScreen.saveEntry.backup');
-      });
 
       // Update widget data (don't block on errors)
       WidgetService.updateWidgetData().catch((err) => {
