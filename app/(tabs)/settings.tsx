@@ -114,9 +114,8 @@ export default function SettingsScreen() {
 
       // Check background task permissions before enabling
       if (frequency !== 'off' && !backgroundPermissions.isEnabled) {
-        await backgroundPermissions.requestPermission();
-        // Re-check permission status after request
-        if (!backgroundPermissions.isEnabled) {
+        const granted = await backgroundPermissions.requestPermission();
+        if (!granted) {
           return; // User denied or restricted, don't enable
         }
       }

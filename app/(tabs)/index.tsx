@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, Platform, ActivityIndicator, KeyboardAvoidingView, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, AppState, Platform, ActivityIndicator, KeyboardAvoidingView, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'expo-router';
@@ -40,7 +40,7 @@ export default function TodayScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
 
-  const today = getTodayString();
+  const [today, setToday] = useState<string>(getTodayString());
   const isOverLimit = characterLimit !== undefined && characterCount > characterLimit;
   const isEmpty = !entry.trim();
 
@@ -53,8 +53,37 @@ export default function TodayScreen() {
   }, [isEmpty, motivationOpacity]);
 
   useEffect(() => {
-    loadTodayEntry();
     SettingsService.getSetting('characterLimit').then(setCharacterLimit);
+  }, []);
+
+  useEffect(() => {
+    loadTodayEntry();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [today]);
+
+  // Recompute today's date whenever the app returns to the foreground so an
+  // overnight session doesn't keep appending to yesterday's entry.
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState !== 'active') return;
+
+      const currentToday = getTodayString();
+      setToday((prevToday) => {
+        if (currentToday === prevToday) return prevToday;
+
+        // Date rolled over — discard the previous day's loaded state so
+        // loadTodayEntry starts clean for the new date.
+        setEntry('');
+        richTextRef.current?.setContentHTML('');
+        setTodayEntry(null);
+        savedBodyRef.current = '';
+        setHasSavedContent(false);
+
+        return currentToday;
+      });
+    });
+
+    return () => subscription.remove();
   }, []);
 
   const loadTodayEntry = async () => {

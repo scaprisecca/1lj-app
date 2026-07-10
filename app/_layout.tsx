@@ -12,7 +12,6 @@ import {
 } from '@expo-google-fonts/inter';
 import { SplashScreen } from 'expo-router';
 import { initializeDatabase, runMigrations } from '@/lib/database/client';
-import { DataMigration } from '@/lib/database/migrations/data-migration';
 import { TaskManagerService } from '@/services/task-manager';
 import { SettingsService } from '@/services/settings';
 import { ToastProvider } from '@/components/atoms/Toast';
@@ -41,9 +40,6 @@ export default function RootLayout() {
       .then(async () => {
         // Run schema migrations
         await runMigrations();
-
-        // Run data migration (converts old field names to new PRD-compliant names)
-        await DataMigration.runAll();
 
         setDatabaseReady(true);
         console.log('Database initialized successfully');

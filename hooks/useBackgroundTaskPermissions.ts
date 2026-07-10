@@ -8,7 +8,7 @@ interface BackgroundTaskPermissions {
   isLoading: boolean;
   isEnabled: boolean;
   statusText: string;
-  requestPermission: () => Promise<void>;
+  requestPermission: () => Promise<boolean>;
 }
 
 /**
@@ -36,7 +36,7 @@ export function useBackgroundTaskPermissions(): BackgroundTaskPermissions {
     }
   };
 
-  const requestPermission = async () => {
+  const requestPermission = async (): Promise<boolean> => {
     try {
       const currentStatus = await TaskManagerService.getBackgroundFetchStatus();
 
@@ -58,7 +58,8 @@ export function useBackgroundTaskPermissions(): BackgroundTaskPermissions {
             },
           ]
         );
-        return;
+        setStatus(currentStatus);
+        return false;
       }
 
       if (currentStatus === BackgroundFetch.BackgroundFetchStatus.Restricted) {
@@ -67,17 +68,17 @@ export function useBackgroundTaskPermissions(): BackgroundTaskPermissions {
           'Background tasks are restricted on this device. Automatic backups may not work as expected.',
           [{ text: 'OK' }]
         );
-        return;
+        setStatus(currentStatus);
+        return false;
       }
 
       // If available, permissions are already granted
-      if (currentStatus === BackgroundFetch.BackgroundFetchStatus.Available) {
-        setStatus(currentStatus);
-        return;
-      }
+      setStatus(currentStatus);
+      return currentStatus === BackgroundFetch.BackgroundFetchStatus.Available;
     } catch (error) {
       console.error('Error requesting background task permission:', error);
       Alert.alert('Error', 'Failed to check background task permissions.');
+      return false;
     }
   };
 
