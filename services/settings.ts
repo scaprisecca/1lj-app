@@ -3,19 +3,22 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const SETTINGS_KEY = '@app_settings';
 
 export type AutoBackupFrequency = 'off' | 'daily' | 'weekly';
+export type BackupLocation = 'documents' | 'share';
 
 export interface AppSettings {
   characterLimit: number;
-  backupDestination: string | null;
   autoBackupFrequency: AutoBackupFrequency;
   lastBackupTime: string | null;
+  backupLocation: BackupLocation;
+  backupCompress: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
   characterLimit: 280, // Default character limit (like Twitter)
-  backupDestination: null,
   autoBackupFrequency: 'off',
   lastBackupTime: null,
+  backupLocation: 'documents',
+  backupCompress: true,
 };
 
 /**

@@ -6,9 +6,10 @@ jest.mock('@react-native-async-storage/async-storage');
 
 const DEFAULT_SETTINGS: AppSettings = {
   characterLimit: 280,
-  backupDestination: null,
   autoBackupFrequency: 'off',
   lastBackupTime: null,
+  backupLocation: 'documents',
+  backupCompress: true,
 };
 
 describe('SettingsService', () => {
@@ -62,9 +63,10 @@ describe('SettingsService', () => {
     it('should save settings to AsyncStorage', async () => {
       const newSettings: AppSettings = {
         characterLimit: 500,
-        backupDestination: '/path/to/backup',
         autoBackupFrequency: 'daily',
         lastBackupTime: '2025-01-01T00:00:00.000Z',
+        backupLocation: 'documents',
+        backupCompress: true,
       };
       (AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
 
@@ -111,15 +113,15 @@ describe('SettingsService', () => {
       );
     });
 
-    it('should update backupDestination setting', async () => {
+    it('should update backupLocation setting', async () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify(DEFAULT_SETTINGS));
       (AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
 
-      await SettingsService.updateSetting('backupDestination', '/new/path');
+      await SettingsService.updateSetting('backupLocation', 'share');
 
       expect(AsyncStorage.setItem).toHaveBeenCalledWith(
         '@app_settings',
-        JSON.stringify({ ...DEFAULT_SETTINGS, backupDestination: '/new/path' })
+        JSON.stringify({ ...DEFAULT_SETTINGS, backupLocation: 'share' })
       );
     });
 

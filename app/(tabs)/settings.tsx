@@ -15,7 +15,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import {
   Download,
   Upload,
-  FolderOpen,
   Clock,
   Type,
   ChevronRight,
@@ -40,9 +39,10 @@ export default function SettingsScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [settings, setSettings] = useState<AppSettings>({
     characterLimit: 280,
-    backupDestination: null,
     autoBackupFrequency: 'off',
     lastBackupTime: null,
+    backupLocation: 'documents',
+    backupCompress: true,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -101,36 +101,6 @@ export default function SettingsScreen() {
       Alert.alert('Error', 'Failed to update character limit');
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const handleBackupDestinationPicker = async () => {
-    try {
-      if (Platform.OS !== 'web') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
-
-      // On mobile, use DocumentPicker to select a directory
-      const result = await DocumentPicker.getDocumentAsync({
-        type: '*/*',
-        copyToCacheDirectory: false,
-      });
-
-      if (result.canceled) {
-        return;
-      }
-
-      // Extract directory path from the selected file
-      const uri = result.assets[0].uri;
-      const dirPath = uri.substring(0, uri.lastIndexOf('/'));
-
-      await SettingsService.updateSetting('backupDestination', dirPath);
-      setSettings({ ...settings, backupDestination: dirPath });
-
-      showToast('Backup destination updated');
-    } catch (error) {
-      console.error('Error selecting backup destination:', error);
-      Alert.alert('Error', 'Failed to select backup destination');
     }
   };
 
@@ -354,28 +324,6 @@ export default function SettingsScreen() {
         {/* Backup Settings Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Backup & Export</Text>
-
-          {/* Backup Destination */}
-          <TouchableOpacity
-            style={styles.settingCard}
-            onPress={handleBackupDestinationPicker}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="Choose backup destination"
-          >
-            <View style={styles.settingRow}>
-              <View style={styles.settingIconContainer}>
-                <FolderOpen size={20} color={colors.primary} />
-              </View>
-              <View style={styles.settingContent}>
-                <Text style={styles.settingLabel}>Backup Destination</Text>
-                <Text style={styles.settingDescription} numberOfLines={1}>
-                  {settings.backupDestination || 'Default location'}
-                </Text>
-              </View>
-              <ChevronRight size={20} color={colors.textMuted} />
-            </View>
-          </TouchableOpacity>
 
           {/* Auto Backup Frequency */}
           <View style={styles.settingCard}>

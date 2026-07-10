@@ -54,22 +54,20 @@ describe('BackupService', () => {
 
       expect(settings).toEqual({
         location: 'documents',
-        autoBackup: true,
         compress: true,
       });
     });
 
     it('should return stored settings when available', async () => {
       const storedSettings = {
-        location: 'share',
-        autoBackup: false,
-        compress: false,
+        backupLocation: 'share',
+        backupCompress: false,
       };
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify(storedSettings));
 
       const settings = await BackupService.getBackupSettings();
 
-      expect(settings).toEqual(storedSettings);
+      expect(settings).toEqual({ location: 'share', compress: false });
     });
 
     it('should return default settings on error', async () => {
@@ -79,7 +77,6 @@ describe('BackupService', () => {
 
       expect(settings).toEqual({
         location: 'documents',
-        autoBackup: true,
         compress: true,
       });
     });
@@ -88,9 +85,8 @@ describe('BackupService', () => {
   describe('getBackupLocationDescription', () => {
     it('should return correct description for documents location on mobile', async () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify({
-        location: 'documents',
-        autoBackup: true,
-        compress: true,
+        backupLocation: 'documents',
+        backupCompress: true,
       }));
 
       const description = await BackupService.getBackupLocationDescription();
@@ -105,9 +101,8 @@ describe('BackupService', () => {
       });
 
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify({
-        location: 'documents',
-        autoBackup: true,
-        compress: true,
+        backupLocation: 'documents',
+        backupCompress: true,
       }));
 
       const description = await BackupService.getBackupLocationDescription();
@@ -117,27 +112,13 @@ describe('BackupService', () => {
 
     it('should return correct description for share location', async () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify({
-        location: 'share',
-        autoBackup: true,
-        compress: true,
+        backupLocation: 'share',
+        backupCompress: true,
       }));
 
       const description = await BackupService.getBackupLocationDescription();
 
       expect(description).toBe('System share dialog (choose location each time)');
-    });
-
-    it('should return correct description for custom location', async () => {
-      (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify({
-        location: 'custom',
-        customPath: '/custom/path',
-        autoBackup: true,
-        compress: true,
-      }));
-
-      const description = await BackupService.getBackupLocationDescription();
-
-      expect(description).toBe('/custom/path');
     });
   });
 
@@ -162,9 +143,8 @@ describe('BackupService', () => {
 
       // Default backup settings
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify({
-        location: 'documents',
-        autoBackup: true,
-        compress: false,
+        backupLocation: 'documents',
+        backupCompress: false,
       }));
     });
 
@@ -191,9 +171,8 @@ describe('BackupService', () => {
 
     it('should create compressed backup when compression is enabled', async () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify({
-        location: 'documents',
-        autoBackup: true,
-        compress: true,
+        backupLocation: 'documents',
+        backupCompress: true,
       }));
 
       const mockEntries = [
@@ -221,9 +200,8 @@ describe('BackupService', () => {
 
     it('should continue with uncompressed backup if compression fails', async () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify({
-        location: 'documents',
-        autoBackup: true,
-        compress: true,
+        backupLocation: 'documents',
+        backupCompress: true,
       }));
 
       const mockEntries = [
@@ -307,9 +285,8 @@ describe('BackupService', () => {
       });
 
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify({
-        location: 'documents',
-        autoBackup: true,
-        compress: false,
+        backupLocation: 'documents',
+        backupCompress: false,
       }));
     });
 
@@ -645,9 +622,9 @@ describe('BackupService', () => {
 
     it('should skip auto-backup when disabled in settings', async () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify({
-        location: 'documents',
-        autoBackup: false,
-        compress: true,
+        backupLocation: 'documents',
+        autoBackupFrequency: 'off',
+        backupCompress: true,
       }));
 
       await BackupService.autoBackup();
@@ -657,9 +634,9 @@ describe('BackupService', () => {
 
     it('should create backup when no previous backup exists', async () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify({
-        location: 'documents',
-        autoBackup: true,
-        compress: false,
+        backupLocation: 'documents',
+        autoBackupFrequency: 'daily',
+        backupCompress: false,
       }));
 
       // Need to track separate chains
@@ -693,9 +670,9 @@ describe('BackupService', () => {
 
     it('should create backup when last backup is older than 24 hours', async () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify({
-        location: 'documents',
-        autoBackup: true,
-        compress: false,
+        backupLocation: 'documents',
+        autoBackupFrequency: 'daily',
+        backupCompress: false,
       }));
 
       const twoDaysAgo = new Date();
@@ -739,9 +716,9 @@ describe('BackupService', () => {
 
     it('should skip backup when recent backup exists', async () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify({
-        location: 'documents',
-        autoBackup: true,
-        compress: false,
+        backupLocation: 'documents',
+        autoBackupFrequency: 'daily',
+        backupCompress: false,
       }));
 
       const oneHourAgo = new Date();
@@ -763,9 +740,9 @@ describe('BackupService', () => {
 
     it('should fail silently on error', async () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify({
-        location: 'documents',
-        autoBackup: true,
-        compress: false,
+        backupLocation: 'documents',
+        autoBackupFrequency: 'daily',
+        backupCompress: false,
       }));
 
       mockDb.select().from().where().orderBy().limit.mockRejectedValue(new Error('Database error'));
@@ -783,39 +760,8 @@ describe('BackupService', () => {
 
     it('should use expo-sharing when location is "share"', async () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify({
-        location: 'share',
-        autoBackup: true,
-        compress: false,
-      }));
-
-      const mockEntries = [
-        {
-          id: 1,
-          entry_date: '2024-01-15',
-          html_body: '<p>Test entry</p>',
-          created_at: '2024-01-15T10:00:00Z',
-          updated_at: '2024-01-15T10:00:00Z',
-        },
-      ];
-
-      mockDb.select().from().orderBy.mockResolvedValue(mockEntries);
-      (FileSystem.writeAsStringAsync as jest.Mock).mockResolvedValue(undefined);
-
-      const Sharing = require('expo-sharing');
-      (Sharing.isAvailableAsync as jest.Mock).mockResolvedValue(true);
-      (Sharing.shareAsync as jest.Mock).mockResolvedValue(undefined);
-
-      await BackupService.createBackup('manual');
-
-      expect(Sharing.shareAsync).toHaveBeenCalled();
-    });
-
-    it('should use expo-sharing for manual backups with custom location', async () => {
-      (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify({
-        location: 'custom',
-        customPath: '/custom/path',
-        autoBackup: true,
-        compress: false,
+        backupLocation: 'share',
+        backupCompress: false,
       }));
 
       const mockEntries = [
@@ -842,9 +788,8 @@ describe('BackupService', () => {
 
     it('should not use expo-sharing for automatic backups with documents location', async () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify({
-        location: 'documents',
-        autoBackup: true,
-        compress: false,
+        backupLocation: 'documents',
+        backupCompress: false,
       }));
 
       const mockEntries = [
@@ -870,9 +815,8 @@ describe('BackupService', () => {
 
     it('should handle sharing not available gracefully', async () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify({
-        location: 'share',
-        autoBackup: true,
-        compress: false,
+        backupLocation: 'share',
+        backupCompress: false,
       }));
 
       const mockEntries = [

@@ -3,9 +3,9 @@ import { backupLogs, journalEntries, type BackupLog, type NewBackupLog } from '@
 import { desc, sql } from 'drizzle-orm';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CompressionService } from './compression';
 import { sanitizeHtml } from '@/utils/html';
+import { SettingsService, type BackupLocation } from './settings';
 
 const ENTRY_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_RESTORED_HTML_BODY_LENGTH = 100 * 1024; // 100 KB
@@ -52,34 +52,22 @@ if (Platform.OS !== 'web') {
   Sharing = require('expo-sharing');
 }
 
-// Types for backup settings
-type BackupLocation = 'documents' | 'custom' | 'share';
-
+// Backup location/compression preferences now live in SettingsService's
+// @app_settings store (see M1) so there's a single source of truth instead
+// of a second AsyncStorage key that the Settings screen never reads.
 interface BackupSettings {
   location: BackupLocation;
-  customPath?: string;
-  autoBackup: boolean;
-  compress?: boolean; // Whether to compress backups
+  compress: boolean;
 }
 
 export class BackupService {
   // Get user's backup preferences
   static async getBackupSettings(): Promise<BackupSettings> {
-    try {
-      const settings = await AsyncStorage.getItem('backupSettings');
-      return settings ? JSON.parse(settings) : {
-        location: 'documents',
-        autoBackup: true,
-        compress: true // Enable compression by default
-      };
-    } catch (error) {
-      console.error('Error loading backup settings:', error);
-      return {
-        location: 'documents',
-        autoBackup: true,
-        compress: true
-      };
-    }
+    const settings = await SettingsService.loadSettings();
+    return {
+      location: settings.backupLocation,
+      compress: settings.backupCompress,
+    };
   }
 
   static async createBackup(type: 'manual' | 'automatic' = 'automatic'): Promise<string> {
@@ -170,27 +158,15 @@ export class BackupService {
         // Handle backup based on user preferences
         const mimeType = backupSettings.compress ? 'application/zip' : 'application/json';
 
-        if (backupSettings.location === 'share' || (type === 'manual' && backupSettings.location !== 'documents')) {
-          // Always share for manual backups or when user prefers sharing
+        if (backupSettings.location === 'share') {
           if (Sharing && await Sharing.isAvailableAsync()) {
             await Sharing.shareAsync(fileUri, {
               mimeType,
               dialogTitle: 'Save Journal Backup'
             });
           }
-        } else if (backupSettings.location === 'documents') {
-          // Save to app documents directory (default behavior)
-          file_uri = fileUri;
-        } else if (backupSettings.location === 'custom' && backupSettings.customPath) {
-          // For future implementation of custom paths
-          // Currently falls back to documents + sharing
-          if (Sharing && await Sharing.isAvailableAsync()) {
-            await Sharing.shareAsync(fileUri, {
-              mimeType,
-              dialogTitle: 'Save Journal Backup to Custom Location'
-            });
-          }
         }
+        // 'documents' location: file already saved to fileUri above, nothing more to do.
       }
       
       // Log the backup using new schema with actual final size
@@ -390,9 +366,11 @@ export class BackupService {
         return;
       }
 
-      // Check if auto-backup is enabled
-      const backupSettings = await this.getBackupSettings();
-      if (!backupSettings.autoBackup) {
+      // Check if auto-backup is enabled — driven by the same
+      // autoBackupFrequency setting the Settings screen and background
+      // task use, so this can't disagree with what the user configured.
+      const frequency = await SettingsService.getSetting('autoBackupFrequency');
+      if (frequency === 'off') {
         console.log('Auto-backup is disabled');
         return;
       }
@@ -432,8 +410,6 @@ export class BackupService {
         return Platform.OS === 'web' ? 'Downloads folder' : 'App Documents folder';
       case 'share':
         return 'System share dialog (choose location each time)';
-      case 'custom':
-        return settings.customPath || 'Custom location';
       default:
         return 'Default location';
     }
