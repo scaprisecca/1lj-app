@@ -60,49 +60,68 @@ export function useAutoSave<T>(
   const dataRef = useRef(data);
   const isSavingRef = useRef(false);
   const pendingSaveRef = useRef(false);
+  const inFlightSaveRef = useRef<Promise<void> | null>(null);
 
   // Update data ref when data changes
   useEffect(() => {
     dataRef.current = data;
   }, [data]);
 
-  // Perform the actual save
-  const performSave = useCallback(async () => {
+  // Perform the actual save. The debounced auto-save timer calls this with
+  // rethrow=false (errors are only reported via onSaveError). Manual saves
+  // (saveNow) call it with rethrow=true so callers can tell a save actually
+  // succeeded before treating the entry as persisted.
+  const performSave = useCallback(async (rethrow = false): Promise<void> => {
     if (isSavingRef.current) {
-      // If already saving, mark that we need another save
+      // If already saving, mark that we need another save once it finishes.
       pendingSaveRef.current = true;
+      if (rethrow) {
+        // Wait for the in-flight save rather than resolving early, so a
+        // manual save never reports success before the data is persisted.
+        await inFlightSaveRef.current?.catch(() => {});
+        return performSave(true);
+      }
       return;
     }
 
-    try {
-      isSavingRef.current = true;
-      setIsSaving(true);
-      setError(null);
-      onSaveStart?.();
+    isSavingRef.current = true;
+    const savePromise = (async () => {
+      try {
+        setIsSaving(true);
+        setError(null);
+        onSaveStart?.();
 
-      await onSave(dataRef.current);
+        await onSave(dataRef.current);
 
-      setLastSaved(new Date());
-      onSaveSuccess?.();
+        setLastSaved(new Date());
+        onSaveSuccess?.();
 
-      // If there was a pending save request while we were saving, trigger another save
-      if (pendingSaveRef.current) {
-        pendingSaveRef.current = false;
-        // Use a short delay before the next save
-        setTimeout(() => performSave(), 500);
+        // If there was a pending save request while we were saving, trigger another save
+        if (pendingSaveRef.current) {
+          pendingSaveRef.current = false;
+          // Use a short delay before the next save
+          setTimeout(() => performSave(), 500);
+        }
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error('Save failed');
+        setError(error);
+        onSaveError?.(error);
+        console.error('Auto-save error:', error);
+        if (rethrow) throw error;
+      } finally {
+        isSavingRef.current = false;
+        setIsSaving(false);
+        inFlightSaveRef.current = null;
       }
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Save failed');
-      setError(error);
-      onSaveError?.(error);
-      console.error('Auto-save error:', error);
-    } finally {
-      isSavingRef.current = false;
-      setIsSaving(false);
-    }
+    })();
+
+    inFlightSaveRef.current = savePromise;
+    await savePromise;
   }, [onSave, onSaveStart, onSaveSuccess, onSaveError]);
 
-  // Save immediately without debouncing
+  // Save immediately without debouncing. Propagates a save failure to the
+  // caller instead of swallowing it, so callers cannot mistake a failed
+  // save for a successful one.
   const saveNow = useCallback(async () => {
     // Clear any pending debounced save
     if (timeoutRef.current) {
@@ -110,7 +129,7 @@ export function useAutoSave<T>(
       timeoutRef.current = undefined;
     }
 
-    await performSave();
+    await performSave(true);
   }, [performSave]);
 
   // Clear error
