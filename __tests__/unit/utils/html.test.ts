@@ -4,6 +4,7 @@ import {
   truncateHtml,
   createTextPreview,
   isHtmlEmpty,
+  sanitizeHtml,
 } from '@/utils/html';
 
 describe('htmlToPlainText', () => {
@@ -135,5 +136,48 @@ describe('isHtmlEmpty', () => {
 
   it('should handle empty string', () => {
     expect(isHtmlEmpty('')).toBe(true);
+  });
+});
+
+describe('sanitizeHtml', () => {
+  it('should keep allowlisted tags', () => {
+    expect(sanitizeHtml('<p>Hello <b>World</b></p>')).toBe('<p>Hello <b>World</b></p>');
+  });
+
+  it('should strip attributes from allowlisted tags', () => {
+    expect(sanitizeHtml('<p onclick="alert(1)" style="color:red">Hi</p>')).toBe('<p>Hi</p>');
+  });
+
+  it('should drop disallowed tags but keep their text content', () => {
+    expect(sanitizeHtml('<script>alert(1)</script>Hello')).toBe('alert(1)Hello');
+  });
+
+  it('should strip img tags including their src attribute', () => {
+    expect(sanitizeHtml('<img src=x onerror="alert(1)">Hi')).toBe('Hi');
+  });
+
+  it('should strip iframe tags', () => {
+    expect(sanitizeHtml('<iframe src="javascript:alert(1)"></iframe>Hi')).toBe('Hi');
+  });
+
+  it('should not be bypassable via nested/malformed tags', () => {
+    expect(sanitizeHtml('<<script>script>alert(1)</script>')).not.toContain('<script>');
+  });
+
+  it('should not let a quoted attribute value smuggle a fake tag close', () => {
+    expect(sanitizeHtml('<div title="\'><script>alert(1)</script>">Hi</div>')).not.toContain('<script>');
+  });
+
+  it('should drop comments', () => {
+    expect(sanitizeHtml('<!-- <script>alert(1)</script> -->Hi')).toBe('Hi');
+  });
+
+  it('should handle empty and non-string input', () => {
+    expect(sanitizeHtml('')).toBe('');
+    expect(sanitizeHtml(undefined as unknown as string)).toBe('');
+  });
+
+  it('should keep br as a self-contained tag', () => {
+    expect(sanitizeHtml('Line1<br/>Line2<br>Line3')).toBe('Line1<br>Line2<br>Line3');
   });
 });

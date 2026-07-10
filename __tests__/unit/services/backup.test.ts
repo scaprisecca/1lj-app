@@ -2,29 +2,35 @@ import { BackupService } from '@/services/backup';
 import { getDatabase, isUsingMock } from '@/lib/database/client';
 import { CompressionService } from '@/services/compression';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 
 // Mock dependencies
 jest.mock('@/lib/database/client');
 jest.mock('@/services/compression');
 jest.mock('@react-native-async-storage/async-storage');
-jest.mock('expo-file-system');
+jest.mock('expo-file-system/legacy');
 
 const mockGetDatabase = getDatabase as jest.MockedFunction<typeof getDatabase>;
 const mockIsUsingMock = isUsingMock as jest.MockedFunction<typeof isUsingMock>;
 
 // Helper to create a mock database instance
-const createMockDb = () => ({
-  select: jest.fn().mockReturnThis(),
-  from: jest.fn().mockReturnThis(),
-  where: jest.fn().mockReturnThis(),
-  orderBy: jest.fn().mockReturnThis(),
-  limit: jest.fn().mockReturnThis(),
-  insert: jest.fn().mockReturnThis(),
-  values: jest.fn().mockResolvedValue(undefined),
-  then: jest.fn((callback) => callback([])),
-});
+const createMockDb = () => {
+  const db: any = {
+    select: jest.fn().mockReturnThis(),
+    from: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockReturnThis(),
+    insert: jest.fn().mockReturnThis(),
+    values: jest.fn().mockResolvedValue(undefined),
+    then: jest.fn((callback: any) => callback([])),
+  };
+  // Mirrors drizzle's expo-sqlite transaction API: runs the callback with
+  // the same query builder used elsewhere in these mocks.
+  db.transaction = jest.fn((callback: (tx: any) => Promise<void>) => callback(db));
+  return db;
+};
 
 describe('BackupService', () => {
   let mockDb: any;
@@ -708,7 +714,7 @@ describe('BackupService', () => {
             limit: jest.fn().mockResolvedValue([
               {
                 id: 1,
-                timestamp: twoDaysAgo.toISOString(),
+                run_time: twoDaysAgo.toISOString(),
                 run_type: 'auto',
                 status: 'success',
               },
@@ -744,7 +750,7 @@ describe('BackupService', () => {
       mockDb.select().from().where().orderBy().limit.mockResolvedValue([
         {
           id: 1,
-          timestamp: oneHourAgo.toISOString(),
+          run_time: oneHourAgo.toISOString(),
           run_type: 'auto',
           status: 'success',
         },

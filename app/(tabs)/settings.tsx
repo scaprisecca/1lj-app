@@ -25,6 +25,7 @@ import * as Haptics from 'expo-haptics';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as DocumentPicker from 'expo-document-picker';
 import { BackupService } from '@/services/backup';
+import { CompressionService } from '@/services/compression';
 import { SettingsService, type AutoBackupFrequency, type AppSettings } from '@/services/settings';
 import { DatabaseService } from '@/services/database';
 import { TaskManagerService } from '@/services/task-manager';
@@ -247,13 +248,20 @@ export default function SettingsScreen() {
         input.click();
       } else {
         const result = await DocumentPicker.getDocumentAsync({
-          type: 'application/json',
+          type: ['application/json', 'application/zip'],
           copyToCacheDirectory: true
         });
 
         if (!result.canceled && result.assets[0]) {
-          const fileContent = await FileSystem.readAsStringAsync(result.assets[0].uri);
-          processRestoreFile(fileContent);
+          const uri = result.assets[0].uri;
+          if (CompressionService.isCompressed(uri)) {
+            // Compressed backups are binary - restoreFromBackup decompresses
+            // the file itself, so pass the path rather than reading it as text.
+            processRestoreFile('', true, uri);
+          } else {
+            const fileContent = await FileSystem.readAsStringAsync(uri);
+            processRestoreFile(fileContent);
+          }
         }
       }
     } catch (error) {
@@ -262,10 +270,10 @@ export default function SettingsScreen() {
     }
   };
 
-  const processRestoreFile = async (content: string) => {
+  const processRestoreFile = async (content: string, isCompressed: boolean = false, filePath?: string) => {
     try {
       setIsRestoring(true);
-      await BackupService.restoreFromBackup(content);
+      await BackupService.restoreFromBackup(content, isCompressed, filePath);
 
       if (Platform.OS !== 'web') {
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

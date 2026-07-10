@@ -1,10 +1,10 @@
 import { CompressionService } from '@/services/compression';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { zip, unzip } from 'react-native-zip-archive';
 import { Platform } from 'react-native';
 
 // Mock dependencies
-jest.mock('expo-file-system');
+jest.mock('expo-file-system/legacy');
 jest.mock('react-native-zip-archive');
 
 describe('CompressionService', () => {

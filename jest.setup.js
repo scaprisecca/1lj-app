@@ -22,6 +22,19 @@ if (typeof global.structuredClone === 'undefined') {
   global.structuredClone = (obj) => JSON.parse(JSON.stringify(obj));
 }
 
+// Mock expo-constants
+jest.mock('expo-constants', () => ({
+  __esModule: true,
+  default: {
+    executionEnvironment: 'bare',
+  },
+  ExecutionEnvironment: {
+    Bare: 'bare',
+    Standalone: 'standalone',
+    StoreClient: 'storeClient',
+  },
+}));
+
 // Mock expo-modules-core
 jest.mock('expo-modules-core', () => ({
   requireNativeModule: jest.fn(),
@@ -68,8 +81,10 @@ jest.mock('expo-sqlite', () => ({
   })),
 }));
 
-// Mock expo-file-system
-jest.mock('expo-file-system', () => ({
+// Mock expo-file-system. SDK 54 moved the legacy functional API (used
+// throughout this codebase) to the '/legacy' subpath, so both module ids
+// need a mock or the real native module gets required during tests.
+const mockFileSystemLegacy = {
   documentDirectory: 'file://mock-documents/',
   cacheDirectory: 'file://mock-cache/',
   writeAsStringAsync: jest.fn().mockResolvedValue(undefined),
@@ -79,7 +94,9 @@ jest.mock('expo-file-system', () => ({
   deleteAsync: jest.fn().mockResolvedValue(undefined),
   copyAsync: jest.fn().mockResolvedValue(undefined),
   readDirectoryAsync: jest.fn().mockResolvedValue([]),
-}));
+};
+jest.mock('expo-file-system', () => mockFileSystemLegacy);
+jest.mock('expo-file-system/legacy', () => mockFileSystemLegacy);
 
 // Mock expo-sharing
 jest.mock('expo-sharing', () => ({

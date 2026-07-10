@@ -5,6 +5,40 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CompressionService } from './compression';
+import { sanitizeHtml } from '@/utils/html';
+
+const ENTRY_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_RESTORED_HTML_BODY_LENGTH = 100 * 1024; // 100 KB
+
+// A single validated, sanitized entry ready for insertion during restore.
+interface RestorableEntry {
+  entry_date: string;
+  html_body: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Validates and sanitizes a raw entry from an untrusted backup file.
+// Returns null if the entry doesn't meet the minimum shape requirements.
+function toRestorableEntry(raw: any): RestorableEntry | null {
+  if (!raw || typeof raw !== 'object') return null;
+
+  const entry_date = raw.entry_date ?? raw.date; // support legacy field name
+  const html_body = raw.html_body ?? raw.content; // support legacy field name
+
+  if (typeof entry_date !== 'string' || !ENTRY_DATE_PATTERN.test(entry_date)) return null;
+  if (typeof html_body !== 'string' || html_body.length > MAX_RESTORED_HTML_BODY_LENGTH) return null;
+
+  const created_at = raw.created_at ?? raw.createdAt;
+  const updated_at = raw.updated_at ?? raw.updatedAt;
+
+  return {
+    entry_date,
+    html_body: sanitizeHtml(html_body),
+    created_at: typeof created_at === 'string' ? created_at : undefined,
+    updated_at: typeof updated_at === 'string' ? updated_at : undefined,
+  };
+}
 
 // Type definition for expo-sharing module
 interface SharingModule {
@@ -264,6 +298,9 @@ export class BackupService {
 
       const db = getDatabase();
       let data;
+      // Tracks the JSON string actually restored, so the logged size reflects
+      // reality even for compressed backups (where `backupData` is unused).
+      let restoredJsonString: string;
 
       // Handle compressed backups
       if (isCompressed && filePath) {
@@ -279,54 +316,66 @@ export class BackupService {
         }
 
         const jsonContent = await FileSystem.readAsStringAsync(`${extractedDir}${jsonFile}`);
+        restoredJsonString = jsonContent;
         data = JSON.parse(jsonContent);
 
         // Clean up extracted files
         await FileSystem.deleteAsync(extractedDir, { idempotent: true });
       } else {
+        restoredJsonString = backupData;
         data = JSON.parse(backupData);
       }
-      
-      if (!data.entries || !Array.isArray(data.entries)) {
+
+      if (!data || typeof data !== 'object' || !Array.isArray(data.entries)) {
         throw new Error('Invalid backup format');
       }
-      
+
       // Validate backup version compatibility
       if (data.version && data.version !== '1.0.0') {
         console.warn('Backup version mismatch, proceeding with caution');
       }
-      
+
       let restoredCount = 0;
       let skippedCount = 0;
-      
+      let invalidCount = 0;
+
+      // Validate and sanitize every entry up front - untrusted backup files
+      // must not reach the database (or later, a WebView) unsanitized.
+      const restorableEntries: RestorableEntry[] = [];
+      for (const rawEntry of data.entries) {
+        const restorable = toRestorableEntry(rawEntry);
+        if (!restorable) {
+          invalidCount++;
+          continue;
+        }
+        restorableEntries.push(restorable);
+      }
+
       // Clear existing entries (if user confirms)
       // For now, we'll just insert new entries and let the unique constraint handle conflicts
-      
-      for (const entry of data.entries) {
-        try {
-          await db.insert(journalEntries).values({
-            entry_date: entry.entry_date || entry.date, // Support both old and new field names
-            html_body: entry.html_body || entry.content, // Support both old and new field names
-            created_at: entry.created_at || entry.createdAt,
-            updated_at: entry.updated_at || entry.updatedAt,
-          });
-          restoredCount++;
-        } catch (insertError) {
-          // Skip entries that already exist
-          console.log('Skipping existing entry for date:', entry.entry_date || entry.date);
-          skippedCount++;
+
+      await db.transaction(async (tx: typeof db) => {
+        for (const entry of restorableEntries) {
+          try {
+            await tx.insert(journalEntries).values(entry);
+            restoredCount++;
+          } catch (insertError) {
+            // Skip entries that already exist
+            console.log('Skipping existing entry for date:', entry.entry_date);
+            skippedCount++;
+          }
         }
-      }
-      
+      });
+
       // Log the restore with details
       await db.insert(backupLogs).values({
-        file_uri: `restored (${restoredCount} new, ${skippedCount} skipped)`,
+        file_uri: `restored (${restoredCount} new, ${skippedCount} skipped, ${invalidCount} invalid)`,
         run_type: 'manual',
         status: 'success',
-        size_bytes: new Blob([backupData]).size,
+        size_bytes: new Blob([restoredJsonString]).size,
       });
-      
-      console.log(`Restore complete: ${restoredCount} entries restored, ${skippedCount} entries skipped`);
+
+      console.log(`Restore complete: ${restoredCount} entries restored, ${skippedCount} entries skipped, ${invalidCount} entries invalid`);
       
     } catch (error) {
       console.error('Error restoring backup:', error);
